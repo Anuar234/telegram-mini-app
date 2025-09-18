@@ -342,24 +342,30 @@ async def get_app():
                         </div>
                         
                         <!-- Тренинг программа -->
-                        <div v-if="currentView === 'training'">
-                            <a href="#" class="menu-item back-btn" @click="currentView = 'menu'">
-                                ← Назад в меню
-                            </a>
-                            
-                            <h2>Тренинг программа</h2>
-                            <p>Видео-уроки для эффективного использования тренажера:</p>
-                            
-                            <div v-for="video in videos" :key="video.id" class="video-item">
-                                <h3>{{ video.title }}</h3>
-                                <p>{{ video.description }}</p>
-                                <p><strong>Уровень:</strong> {{ video.level }}</p>
-                                <p><strong>Длительность:</strong> {{ video.duration }}</p>
+<div v-if="currentView === 'training'">
+    <a href="#" class="menu-item back-btn" @click="currentView = 'menu'">
+        ← Назад в меню
+    </a>
+    
+    <h2>Тренинг программа</h2>
+    <p>Видео-уроки для эффективного использования тренажера:</p>
+    
+        <!-- Image above videos -->
+            <img 
+                src="/static/photo-training_equipment.jpg" 
+                    alt="Тренажер" 
+                        style="width:100%; max-width:600px; border-radius:8px; margin:15px 0;">
+                    <div v-for="video in videos" :key="video.id" class="video-item">
+                        <h3>{{ video.title }}</h3>
+                        <p>{{ video.description }}</p>
+                        <p><strong>Уровень:</strong> {{ video.level }}</p>
+                        <p><strong>Длительность:</strong> {{ video.duration }}</p>
                                 <button class="submit-btn" @click="openYoutube(video.youtube_url)">
                                     ▶️ Смотреть видео
                                 </button>
                             </div>
                         </div>
+
                         
                         <!-- Консультация -->
                         <div v-if="currentView === 'consultation'">
