@@ -7,6 +7,10 @@ import os
 
 app = FastAPI()
 
+@app.on_event("startup")
+async def startup_event():
+    print("🚀 FastAPI server is starting up...")
+
 # Serve static files (CSS, images, JS)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
