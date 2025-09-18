@@ -1,19 +1,16 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Тренажер App</title>
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>Главная</title>
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <div id="app"></div>
-
-    <script>
-        const API_BASE = window.location.origin + '/api';
-        // ... your Vue app code here ...
-    </script>
+    <h1>Добро пожаловать!</h1>
+    <nav>
+        <a href="/product">📋 Информация о продукте</a> |
+        <a href="/trainings">🎥 Тренинг программа</a> |
+        <a href="/support">💬 Консультация</a>
+    </nav>
 </body>
 </html>

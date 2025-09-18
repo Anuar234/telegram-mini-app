@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Продукт</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <a href="/">← Назад</a>
+    <h2>{{ productInfo.name if productInfo else "Универсальный тренажер" }}</h2>
+    <p>{{ productInfo.description if productInfo else "Описание продукта" }}</p>
+</body>
+</html>

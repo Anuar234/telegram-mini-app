@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Консультация</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+</head>
+<body>
+    <a href="/">← Назад</a>
+    <div id="app">
+        <h1>Консультация</h1>
+        <p>Задайте вопрос нашему специалисту:</p>
+        
+        <div class="form-group">
+            <label>Ваше имя:</label>
+            <input type="text" v-model="form.name" placeholder="Введите имя">
+        </div>
+        <div class="form-group">
+            <label>Ваш вопрос:</label>
+            <textarea v-model="form.question" placeholder="Опишите ваш вопрос" rows="4"></textarea>
+        </div>
+        <div class="form-group">
+            <label>Контакт для связи (не обязательно):</label>
+            <input type="text" v-model="form.contact" placeholder="Телефон или email">
+        </div>
+        <button @click="submit" :disabled="!form.name || !form.question">Отправить вопрос</button>
+    </div>
+
+    <script>
+        const { createApp } = Vue;
+        createApp({
+            data() {
+                return {
+                    form: { name: '', question: '', contact: '' }
+                };
+            },
+            methods: {
+                async submit() {
+                    try {
+                        const res = await fetch('/api/consultation', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(this.form)
+                        });
+                        if (res.ok) {
+                            alert('Запрос отправлен!');
+                            this.form = { name: '', question: '', contact: '' };
+                        }
+                    } catch (e) {
+                        alert('Ошибка при отправке запроса');
+                    }
+                }
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>

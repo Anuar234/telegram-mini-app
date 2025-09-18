@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Тренинг программа</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+</head>
+<body>
+    <a href="/">← Назад</a>
+    <div id="app">
+        <h1>Тренинг программа</h1>
+        <p>Видео-уроки для эффективного использования тренажера:</p>
+        
+        <div v-for="video in videos" :key="video.id" class="video-item">
+            <h3>{{ video.title }}</h3>
+            <p>{{ video.description }}</p>
+            <p><strong>Уровень:</strong> {{ video.level }}</p>
+            <p><strong>Длительность:</strong> {{ video.duration }}</p>
+            <button @click="openYoutube(video.youtube_url)">▶️ Смотреть видео</button>
+        </div>
+    </div>
+
+    <script>
+        const { createApp } = Vue;
+        createApp({
+            data() {
+                return { videos: [] };
+            },
+            async mounted() {
+                const res = await fetch('/api/videos');
+                this.videos = await res.json();
+            },
+            methods: {
+                openYoutube(url) {
+                    window.open(url, '_blank');
+                }
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
