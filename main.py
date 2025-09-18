@@ -424,6 +424,8 @@ async def get_app():
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
+    loop = asyncio.get_event_loop()
+    loop.create_task(run_telegram_bot()) 
     print("🚀 Запуск сервера...")
     print(f"📱 Mini App: http://localhost:{port}/app")
     print(f"📋 API docs: http://localhost:{port}/docs")
