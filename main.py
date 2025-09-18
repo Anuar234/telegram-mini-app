@@ -423,7 +423,7 @@ async def get_app():
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
-    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("/start", start))
     print("🚀 Запуск сервера...")
     print(f"📱 Mini App: http://localhost:{port}/app")
     print(f"📋 API docs: http://localhost:{port}/docs")
