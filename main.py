@@ -15,8 +15,7 @@ BOT_TOKEN = os.environ.get("BOT_TOKEN")  # Добавь BOT_TOKEN в Railway sec
 # Асинхронная функция для команды /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "Привет! Я бот тренажера. 👋\n\n"
-        "Вы можете открыть мини-эпп по кнопке ниже или посмотреть видео через команды."
+        "Привет! Бот запущен и готов к работе."
     )
 
 async def run_telegram_bot():
@@ -424,8 +423,7 @@ async def get_app():
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
-    loop = asyncio.get_event_loop()
-    loop.create_task(run_telegram_bot()) 
+    app.add_handler(CommandHandler("start", start))
     print("🚀 Запуск сервера...")
     print(f"📱 Mini App: http://localhost:{port}/app")
     print(f"📋 API docs: http://localhost:{port}/docs")
