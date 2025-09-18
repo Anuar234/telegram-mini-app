@@ -1,13 +1,17 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from typing import List, Optional
 import uvicorn
 import os
 
-app = FastAPI(title="Тренажер Mini App API")
+# Создаем приложение
+app = FastAPI(
+    title="Тренажер Mini App API",
+    description="API для Telegram Mini App тренажера",
+    version="1.0.0"
+)
 
 # CORS middleware для локальной разработки
 app.add_middleware(
@@ -79,7 +83,11 @@ PRODUCT_INFO = {
 # API эндпоинты
 @app.get("/")
 async def root():
-    return {"message": "Telegram Mini App API работает"}
+    return {"message": "Telegram Mini App API работает", "status": "ok"}
+
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy", "message": "API работает нормально"}
 
 @app.get("/api/product-info")
 async def get_product_info():
@@ -112,8 +120,8 @@ async def send_consultation_request(request: ConsultationRequest):
     print(f"Новый запрос на консультацию от {request.name}: {request.question}")
     return {"message": "Запрос на консультацию отправлен", "status": "success"}
 
-# Подключение статических файлов (для фронтенда)
-app.mount("/static", StaticFiles(directory="static"), name="static")
+# Подключение статических файлов убираем - не нужно для деплоя
+# app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Главная страница (будет отдавать Vue.js приложение)
 @app.get("/app")
