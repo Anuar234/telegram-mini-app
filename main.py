@@ -6,8 +6,27 @@ from typing import List, Optional
 from fastapi.staticfiles import StaticFiles
 import uvicorn
 import os
+from telegram import Update
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+import asyncio
 
+BOT_TOKEN = os.environ.get("BOT_TOKEN")  # Добавь BOT_TOKEN в Railway secrets
 
+# Асинхронная функция для команды /start
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "Привет! Я бот тренажера. 👋\n\n"
+        "Вы можете открыть мини-эпп по кнопке ниже или посмотреть видео через команды."
+    )
+
+async def run_telegram_bot():
+    app_bot = ApplicationBuilder().token(BOT_TOKEN).build()
+    app_bot.add_handler(CommandHandler("start", start))
+    print("🤖 Telegram Bot запущен")
+    await app_bot.initialize()
+    await app_bot.start()
+    await app_bot.updater.start_polling()
+    await app_bot.updater.idle()  # Чтобы бот работал непрерывно
 # Создаем приложение
 app = FastAPI(
     title="Тренажер Mini App API",
