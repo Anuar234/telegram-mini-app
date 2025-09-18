@@ -3,8 +3,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from typing import List, Optional
+from fastapi.staticfiles import StaticFiles
 import uvicorn
 import os
+
 
 # Создаем приложение
 app = FastAPI(
@@ -21,6 +23,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Модели данных
 class Video(BaseModel):
