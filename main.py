@@ -20,10 +20,10 @@ print("BOT_TOKEN:", BOT_TOKEN)
 application = Application.builder().token(os.getenv("BOT_TOKEN")).build()
 
 # Асинхронная функция для команды /start
-async def command1(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Привет! 👋 Это мой бот, запущенный на Railway!")
 
-application.add_handler(CommandHandler("command1", command1))
+application.add_handler(CommandHandler("start", start))
 
 app = FastAPI(
     title="Тренажер Mini App API",
