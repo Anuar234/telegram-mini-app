@@ -34,6 +34,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Отправляем гифку с текстом
     await update.message.reply_animation(animation=open(GIF_PATH, "rb"), caption=welcome_text)
 
+application.add_handler(CommandHandler("start", start))
 
 app = FastAPI(
     title="Тренажер Mini App API",
