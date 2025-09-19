@@ -64,25 +64,25 @@ class ConsultationRequest(BaseModel):
 VIDEOS_DB = [
     {
         "id": 1,
-        "title": "Введение в тренировки",
+        "title": "Тяга к наклоне с упором на одну ногу",
         "description": "Базовые принципы использования тренажера",
-        "youtube_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+        "youtube_url": "https://www.youtube.com/shorts/7HenbdPMa7c",
         "duration": "10:30",
         "level": "начинающий"
     },
     {
         "id": 2,
-        "title": "Правильная техника выполнения",
+        "title": "Обратные отжимания",
         "description": "Как правильно выполнять упражнения",
-        "youtube_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+        "youtube_url": "https://www.youtube.com/shorts/gyPxkTHfKM0",
         "duration": "15:45",
         "level": "начинающий"
     },
     {
         "id": 3,
-        "title": "Продвинутые техники",
+        "title": "Тяга резинок в наклоне",
         "description": "Сложные упражнения для опытных пользователей",
-        "youtube_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+        "youtube_url": "https://www.youtube.com/shorts/fBdKukhlKEA",
         "duration": "20:15",
         "level": "продвинутый"
     }
