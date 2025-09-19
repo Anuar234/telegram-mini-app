@@ -16,11 +16,11 @@ from telegram.ext import CommandHandler, ContextTypes, Application
 import threading
 
 
-BOT_TOKEN = os.getenv("BOT_TOKEN") # Добавь BOT_TOKEN в Railway secrets
+BOT_TOKEN = "8263866057:AAFDh3rI1Uh2lr0cqmCMz0tbQwCAhbXmpns" # Добавь BOT_TOKEN в Railway secrets
 print("BOT_TOKEN:", BOT_TOKEN)
 
 
-application = Application.builder().token(os.getenv("BOT_TOKEN")).build()
+application = Application.builder().token(BOT_TOKEN).build()
 
 # Асинхронная функция для команды /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
