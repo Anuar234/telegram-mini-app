@@ -7,7 +7,6 @@ from fastapi.staticfiles import StaticFiles
 import uvicorn
 import os
 from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 import asyncio
 from fastapi.responses import JSONResponse
 from telegram.ext import Application, CommandHandler, ContextTypes
@@ -21,10 +20,10 @@ print("BOT_TOKEN:", BOT_TOKEN)
 application = Application.builder().token(os.getenv("BOT_TOKEN")).build()
 
 # Асинхронная функция для команды /start
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def command1(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Привет! 👋 Это мой бот, запущенный на Railway!")
 
-application.add_handler(CommandHandler("command1", start))
+application.add_handler(CommandHandler("command1", command1))
 
 app = FastAPI(
     title="Тренажер Mini App API",
@@ -108,10 +107,16 @@ async def health():
 
 @app.post("/webhook")
 async def webhook(request: Request):
-    data = await request.json()
-    update = Update.de_json(data, application.bot)
-    await application.process_update(update)
-    return {"ok": True}
+    try:
+        data = await request.json()
+        update = Update.de_json(data, application.bot)
+        await application.process_update(update)
+        return {"ok": True}
+    except Exception as e:
+        print("❌ Webhook error:", e)
+        return {"ok": False, "error": str(e)}
+
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
