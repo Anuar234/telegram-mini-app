@@ -12,6 +12,9 @@ from fastapi.responses import JSONResponse
 from telegram.ext import Application, CommandHandler, ContextTypes
 from fastapi import Request
 from contextlib import asynccontextmanager
+from telegram.ext import CommandHandler, ContextTypes, Application
+import threading
+
 
 BOT_TOKEN = os.getenv("BOT_TOKEN") # Добавь BOT_TOKEN в Railway secrets
 print("BOT_TOKEN:", BOT_TOKEN)
@@ -21,9 +24,10 @@ application = Application.builder().token(os.getenv("BOT_TOKEN")).build()
 
 # Асинхронная функция для команды /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Привет! 👋 Это мой бот, запущенный на Railway!")
+    await update.message.reply_text("Привет! 👋 Бот работает!")
 
 application.add_handler(CommandHandler("start", start))
+
 
 app = FastAPI(
     title="Тренажер Mini App API",
@@ -439,6 +443,12 @@ async def get_app():
     </body>
     </html>
     """)
+
+def run_bot():
+    print("🚀 Запуск Telegram бота...")
+    application.run_polling()  # Бот начинает слушать команды
+
+threading.Thread(target=run_bot, daemon=True).start()
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
