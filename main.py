@@ -22,9 +22,8 @@ print("BOT_TOKEN:", BOT_TOKEN)
 
 application = Application.builder().token(BOT_TOKEN).build()
 
-# Асинхронная функция для команды /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Привет! 👋 Бот работает!")
+    await update.message.reply_text("Привет! 👋 Бот работает! Миниаппка тоже стартует сама!")
 
 application.add_handler(CommandHandler("start", start))
 
@@ -124,10 +123,18 @@ async def webhook(request: Request):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    print("🚀 Приложение запущено")
-    yield
-    print("🛑 Приложение остановлено")
+    # Запуск бота в фоне
+    async def run_bot():
+        print("🚀 Запуск Telegram бота...")
+        await application.initialize()
+        await application.start()
+        await application.updater.start_polling()
+        # бот будет слушать команды, не останавливаем loop
 
+    asyncio.create_task(run_bot())
+    print("🚀 Приложение FastAPI запущено")
+    yield
+    print("🛑 Приложение FastAPI остановлено")
 
 
 
@@ -444,11 +451,18 @@ async def get_app():
     </html>
     """)
 
-def run_bot():
+async def run_bot():
     print("🚀 Запуск Telegram бота...")
-    application.run_polling()  # Бот начинает слушать команды
+    await application.initialize()
+    await application.start()
+    await application.updater.start_polling()  # polling без закрытия loop
+    # await application.updater.stop() не вызываем
 
-threading.Thread(target=run_bot, daemon=True).start()
+
+@app.on_event("startup")
+async def startup_event():
+    # Запускаем бота в фоне через asyncio.create_task
+    asyncio.create_task(run_bot())
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
