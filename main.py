@@ -11,6 +11,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 import asyncio
 from fastapi.responses import JSONResponse
 from telegram.ext import Application, CommandHandler, ContextTypes
+from fastapi import Request
 
 
 BOT_TOKEN = os.getenv("BOT_TOKEN") # Добавь BOT_TOKEN в Railway secrets
@@ -102,6 +103,15 @@ PRODUCT_INFO = {
 @app.get("/health")
 async def health():
     return JSONResponse(content={"status": "ok"})
+
+@app.post("/webhook")
+async def webhook(request: Request):
+    data = await request.json()
+    update = Update.de_json(data, application.bot)
+    await application.process_update(update)
+    return {"ok": True}
+
+
 
 @app.get("/")
 async def root():
@@ -418,7 +428,6 @@ async def get_app():
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
-    application.run_polling()
     print("🚀 Запуск сервера...")
     print(f"📱 Mini App: http://localhost:{port}/app")
     print(f"📋 API docs: http://localhost:{port}/docs")
