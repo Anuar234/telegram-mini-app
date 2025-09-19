@@ -24,7 +24,7 @@ application = Application.builder().token(os.getenv("BOT_TOKEN")).build()
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Привет! 👋 Это мой бот, запущенный на Railway!")
 
-application.add_handler(CommandHandler("start", start))
+application.add_handler(CommandHandler("command1", start))
 
 app = FastAPI(
     title="Тренажер Mini App API",
