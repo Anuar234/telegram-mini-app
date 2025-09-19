@@ -10,25 +10,19 @@ from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 import asyncio
 from fastapi.responses import JSONResponse
+from telegram.ext import Application, CommandHandler, ContextTypes
 
 
 BOT_TOKEN = os.environ.get("8263866057:AAFDh3rI1Uh2lr0cqmCMz0tbQwCAhbXmpns")  # Добавь BOT_TOKEN в Railway secrets
 
+application = Application.builder().token(BOT_TOKEN).build()
+
 # Асинхронная функция для команды /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
-        "Привет! Бот запущен и готов к работе."
-    )
+    await update.message.reply_text("Привет 👋! Я твой тренировочный бот 🏋️")
 
-async def run_telegram_bot():
-    app_bot = ApplicationBuilder().token(BOT_TOKEN).build()
-    app_bot.add_handler(CommandHandler("start", start))
-    print("🤖 Telegram Bot запущен")
-    await app_bot.initialize()
-    await app_bot.start()
-    await app_bot.updater.start_polling()
-    await app_bot.updater.idle()  # Чтобы бот работал непрерывно
-# Создаем приложение
+application.add_handler(CommandHandler("start", start))
+
 app = FastAPI(
     title="Тренажер Mini App API",
     description="API для Telegram Mini App тренажера",
