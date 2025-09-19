@@ -10,7 +10,7 @@ from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 import asyncio
 
-BOT_TOKEN = os.environ.get("BOT_TOKEN")  # Добавь BOT_TOKEN в Railway secrets
+BOT_TOKEN = os.environ.get("8263866057:AAFDh3rI1Uh2lr0cqmCMz0tbQwCAhbXmpns")  # Добавь BOT_TOKEN в Railway secrets
 
 # Асинхронная функция для команды /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
