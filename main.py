@@ -12,15 +12,17 @@ import asyncio
 from fastapi.responses import JSONResponse
 from telegram.ext import Application, CommandHandler, ContextTypes
 from fastapi import Request
-
+from contextlib import asynccontextmanager
 
 BOT_TOKEN = os.getenv("BOT_TOKEN") # Добавь BOT_TOKEN в Railway secrets
+print("BOT_TOKEN:", BOT_TOKEN)
 
-application = Application.builder().token(BOT_TOKEN).build()
+
+application = Application.builder().token(os.getenv("BOT_TOKEN")).build()
 
 # Асинхронная функция для команды /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Привет 👋! Я твой тренировочный бот 🏋️")
+    await update.message.reply_text("Привет! 👋 Это мой бот, запущенный на Railway!")
 
 application.add_handler(CommandHandler("start", start))
 
@@ -110,6 +112,13 @@ async def webhook(request: Request):
     update = Update.de_json(data, application.bot)
     await application.process_update(update)
     return {"ok": True}
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    print("🚀 Приложение запущено")
+    yield
+    print("🛑 Приложение остановлено")
+
 
 
 
