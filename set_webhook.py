@@ -1,6 +1,6 @@
 import requests
 
-BOT_TOKEN = "ТВОЙ_ТОКЕН"
+BOT_TOKEN = "BOT_TOKEN"
 WEBHOOK_URL = "https://web-production-81447.up.railway.app/webhook"
 
 url = f"https://api.telegram.org/bot{BOT_TOKEN}/setWebhook"
