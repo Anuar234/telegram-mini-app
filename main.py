@@ -9,6 +9,8 @@ import os
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 import asyncio
+from fastapi.responses import JSONResponse
+
 
 BOT_TOKEN = os.environ.get("8263866057:AAFDh3rI1Uh2lr0cqmCMz0tbQwCAhbXmpns")  # Добавь BOT_TOKEN в Railway secrets
 
@@ -103,9 +105,13 @@ PRODUCT_INFO = {
 }
 
 # API эндпоинты
+@app.get("/health")
+async def health():
+    return JSONResponse(content={"status": "ok"})
+
 @app.get("/")
 async def root():
-    # Перенаправляем на Mini App
+    # Возвращаем HTML с редиректом
     return HTMLResponse(content="""
     <!DOCTYPE html>
     <html>
@@ -114,7 +120,6 @@ async def root():
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Тренажер App</title>
         <script>
-            // Автоматическое перенаправление на /app
             window.location.href = '/app';
         </script>
     </head>
@@ -127,10 +132,6 @@ async def root():
     </body>
     </html>
     """)
-
-@app.get("/healthz")
-async def health_check():
-    return {"status": "healthy", "message": "API работает нормально"}
 
 @app.get("/api/product-info")
 async def get_product_info():
