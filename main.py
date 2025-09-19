@@ -128,7 +128,7 @@ async def root():
     </html>
     """)
 
-@app.get("/health")
+@app.get("/healthz")
 async def health_check():
     return {"status": "healthy", "message": "API работает нормально"}
 
