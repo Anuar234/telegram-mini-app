@@ -13,7 +13,7 @@ from fastapi.responses import JSONResponse
 from telegram.ext import Application, CommandHandler, ContextTypes
 
 
-BOT_TOKEN = os.environ.get("8263866057:AAFDh3rI1Uh2lr0cqmCMz0tbQwCAhbXmpns")  # Добавь BOT_TOKEN в Railway secrets
+BOT_TOKEN = os.getenv("BOT_TOKEN") # Добавь BOT_TOKEN в Railway secrets
 
 application = Application.builder().token(BOT_TOKEN).build()
 
@@ -418,7 +418,7 @@ async def get_app():
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
-    app.add_handler(CommandHandler("/start", start))
+    application.run_polling()
     print("🚀 Запуск сервера...")
     print(f"📱 Mini App: http://localhost:{port}/app")
     print(f"📋 API docs: http://localhost:{port}/docs")
