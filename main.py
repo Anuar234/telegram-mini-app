@@ -12,17 +12,19 @@ from fastapi.responses import JSONResponse
 from telegram.ext import Application, CommandHandler, ContextTypes
 from fastapi import Request
 from contextlib import asynccontextmanager
-from telegram.ext import CommandHandler, ContextTypes, Application
 import threading
+import re
+import logging
 
+# Настройка логирования
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-BOT_TOKEN = "8263866057:AAFDh3rI1Uh2lr0cqmCMz0tbQwCAhbXmpns" # Добавь BOT_TOKEN в Railway secrets
+BOT_TOKEN = "8263866057:AAH6d_4WjfNbENt6T1TRJtLjjOruFAyKP5E" 
 print("BOT_TOKEN:", BOT_TOKEN)
 
-
-application = Application.builder().token(BOT_TOKEN).build()
-
-GIF_PATH = os.path.join("static", "welcome.gif")  # замените на свой путь
+# Глобальная переменная для приложения бота
+telegram_app = None
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     welcome_text = (
@@ -31,15 +33,124 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "правильным его использованием, видеоуроками и программами питания! "
         "Удачи в ваших начинаниях!"
     )
-    # Отправляем гифку с текстом
-    await update.message.reply_animation(animation=open(GIF_PATH, "rb"), caption=welcome_text)
+    # Отправляем приветствие (без GIF для упрощения)
+    await update.message.reply_text(welcome_text)
 
-application.add_handler(CommandHandler("start", start))
+def setup_telegram_handlers():
+    """Настройка обработчиков команд Telegram"""
+    global telegram_app
+    if telegram_app is None:
+        telegram_app = Application.builder().token(BOT_TOKEN).build()
+        telegram_app.add_handler(CommandHandler("start", start))
+    return telegram_app
+
+async def start_polling():
+    """Запуск polling в отдельной функции (устаревший метод)"""
+    # Эта функция заменена на start_polling_with_retry
+    pass
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Управление жизненным циклом приложения"""
+    global telegram_app
+    
+    print("🚀 Запуск приложения...")
+    
+    # Настройка и запуск Telegram бота
+    try:
+        telegram_app = setup_telegram_handlers()
+        await telegram_app.initialize()
+        
+        # ПРИНУДИТЕЛЬНАЯ ОЧИСТКА всех активных соединений
+        try:
+            # Сначала пытаемся получить информацию о боте
+            bot_info = await telegram_app.bot.get_me()
+            logger.info(f"Bot info: {bot_info.username}")
+            
+            # Принудительно очищаем все pending updates и webhook
+            await telegram_app.bot.delete_webhook(drop_pending_updates=True)
+            logger.info("✅ Webhook удален, pending updates очищены")
+            
+            # Ждем немного для полной очистки
+            await asyncio.sleep(2)
+            
+        except Exception as e:
+            logger.warning(f"Предупреждение при очистке: {e}")
+        
+        await telegram_app.start()
+        
+        # Используем более мягкий режим запуска polling
+        try:
+            # Запускаем polling с retry логикой
+            polling_task = asyncio.create_task(start_polling_with_retry())
+            logger.info("✅ Telegram бот запущен успешно")
+        except Exception as e:
+            logger.error(f"❌ Ошибка запуска polling: {e}")
+            # Если polling не работает, продолжаем без него (можно использовать webhook)
+        
+    except Exception as e:
+        logger.error(f"❌ Ошибка запуска Telegram бота: {e}")
+    
+    yield  # Приложение работает
+    
+    # Остановка при завершении
+    print("🛑 Остановка приложения...")
+    try:
+        if telegram_app:
+            # Останавливаем updater перед остановкой приложения
+            if telegram_app.updater and telegram_app.updater.running:
+                await telegram_app.updater.stop()
+                logger.info("✅ Updater остановлен")
+            
+            await telegram_app.stop()
+            await telegram_app.shutdown()
+            logger.info("✅ Telegram бот остановлен")
+    except Exception as e:
+        logger.error(f"❌ Ошибка остановки Telegram бота: {e}")
+
+async def start_polling_with_retry():
+    """Запуск polling с retry логикой"""
+    global telegram_app
+    max_retries = 3
+    retry_delay = 5
+    
+    for attempt in range(max_retries):
+        try:
+            logger.info(f"Попытка запуска polling #{attempt + 1}")
+            
+            # Настройки polling с более коротким timeout
+            await telegram_app.updater.start_polling(
+                poll_interval=2.0,
+                timeout=20,
+                read_timeout=15,
+                write_timeout=15,
+                connect_timeout=15,
+                pool_timeout=15,
+                bootstrap_retries=3,
+                allowed_updates=["message", "callback_query"]
+            )
+            
+            logger.info("✅ Polling запущен успешно")
+            break
+            
+        except Exception as e:
+            logger.error(f"❌ Ошибка polling попытка {attempt + 1}: {e}")
+            
+            if attempt < max_retries - 1:
+                logger.info(f"Повтор через {retry_delay} секунд...")
+                await asyncio.sleep(retry_delay)
+                retry_delay *= 2  # Экспоненциальная задержка
+            else:
+                logger.error("❌ Все попытки запуска polling исчерпаны")
+                # Можно переключиться на webhook режим
+                logger.info("💡 Рассмотрите использование webhook вместо polling")
+                break
 
 app = FastAPI(
     title="Тренажер Mini App API",
     description="API для Telegram Mini App тренажера",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 # CORS middleware для локальной разработки
@@ -66,6 +177,19 @@ class ConsultationRequest(BaseModel):
     name: str
     question: str
     contact: Optional[str] = None
+
+def extract_youtube_id(url):
+    """Извлекает ID видео из YouTube URL"""
+    patterns = [
+        r'(?:youtube\.com/watch\?v=|youtu\.be/|youtube\.com/shorts/)([^&\n?#]+)',
+        r'youtube\.com/embed/([^&\n?#]+)'
+    ]
+    
+    for pattern in patterns:
+        match = re.search(pattern, url)
+        if match:
+            return match.group(1)
+    return None
 
 # Временная база данных (в продакшене заменить на настоящую БД)
 VIDEOS_DB = [
@@ -114,35 +238,77 @@ PRODUCT_INFO = {
 # API эндпоинты
 @app.get("/health")
 async def health():
-    return JSONResponse(content={"status": "ok"})
+    """Health check endpoint"""
+    global telegram_app
+    bot_status = "running" if telegram_app and telegram_app.running else "stopped"
+    updater_status = "running" if telegram_app and telegram_app.updater and telegram_app.updater.running else "stopped"
+    
+    return JSONResponse(content={
+        "status": "ok", 
+        "bot_status": bot_status,
+        "updater_status": updater_status,
+        "app_version": "1.0.0"
+    })
+
+@app.post("/reset-bot")
+async def reset_bot():
+    """Принудительный сброс бота (для отладки)"""
+    global telegram_app
+    
+    try:
+        logger.info("🔄 Начинаем сброс бота...")
+        
+        if telegram_app:
+            # Останавливаем updater
+            if telegram_app.updater and telegram_app.updater.running:
+                await telegram_app.updater.stop()
+                logger.info("✅ Updater остановлен")
+            
+            # Останавливаем приложение
+            await telegram_app.stop()
+            await telegram_app.shutdown()
+            logger.info("✅ Приложение остановлено")
+            
+            # Очищаем webhook
+            await telegram_app.bot.delete_webhook(drop_pending_updates=True)
+            logger.info("✅ Webhook очищен")
+        
+        # Ждем очистки
+        await asyncio.sleep(3)
+        
+        # Пересоздаем приложение
+        telegram_app = setup_telegram_handlers()
+        await telegram_app.initialize()
+        await telegram_app.start()
+        
+        logger.info("✅ Бот успешно пересоздан")
+        
+        return {"status": "success", "message": "Бот успешно сброшен"}
+        
+    except Exception as e:
+        logger.error(f"❌ Ошибка сброса бота: {e}")
+        return {"status": "error", "message": str(e)}
+
+# Удаляем старые функции запуска
+# async def run_bot() и @app.on_event("startup") больше не нужны
 
 @app.post("/webhook")
 async def webhook(request: Request):
+    """Webhook endpoint для Telegram бота"""
+    global telegram_app
     try:
         data = await request.json()
-        update = Update.de_json(data, application.bot)
-        await application.process_update(update)
+        if telegram_app:
+            update = Update.de_json(data, telegram_app.bot)
+            await telegram_app.process_update(update)
         return {"ok": True}
     except Exception as e:
-        print("❌ Webhook error:", e)
+        logger.error(f"❌ Webhook error: {e}")
         return {"ok": False, "error": str(e)}
 
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Запуск бота в фоне
-    async def run_bot():
-        print("🚀 Запуск Telegram бота...")
-        await application.initialize()
-        await application.start()
-        await application.updater.start_polling()
-        # бот будет слушать команды, не останавливаем loop
 
-    asyncio.create_task(run_bot())
-    print("🚀 Приложение FastAPI запущено")
-    yield
-    print("🛑 Приложение FastAPI остановлено")
 
 
 
@@ -237,16 +403,19 @@ async def get_app():
                 border-radius: 8px;
                 text-align: center;
                 font-weight: 500;
+                transition: all 0.3s ease;
             }
             .menu-item:hover {
                 opacity: 0.8;
+                transform: translateY(-1px);
             }
             .video-item {
                 border: 1px solid #e0e0e0;
-                border-radius: 8px;
-                padding: 15px;
-                margin: 10px 0;
+                border-radius: 12px;
+                padding: 20px;
+                margin: 15px 0;
                 background: var(--tg-theme-secondary-bg-color, #f8f8f8);
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             }
             .back-btn {
                 background: var(--tg-theme-secondary-bg-color, #f0f0f0);
@@ -276,6 +445,225 @@ async def get_app():
                 border-radius: 5px;
                 cursor: pointer;
                 width: 100%;
+                transition: all 0.3s ease;
+            }
+            .submit-btn:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(0,123,255,0.3);
+            }
+            .submit-btn:disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
+                transform: none;
+                box-shadow: none;
+            }
+            
+            /* Стили для видео-виджета (оптимизировано для Shorts) */
+            .video-widget {
+                position: relative;
+                width: 100%;
+                max-width: 400px;
+                margin: 15px auto;
+                border-radius: 16px;
+                overflow: hidden;
+                box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+                background: #000;
+            }
+            
+            .video-thumbnail {
+                position: relative;
+                width: 100%;
+                height: 500px; /* Увеличена высота для вертикального формата */
+                background-size: cover;
+                background-position: center;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.3s ease;
+                background-color: #000;
+            }
+            
+            .video-thumbnail:hover {
+                transform: scale(1.01);
+            }
+            
+            /* Градиент поверх превью для лучшей видимости кнопки */
+            .video-thumbnail::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: linear-gradient(
+                    135deg, 
+                    rgba(0,0,0,0.3) 0%, 
+                    rgba(0,0,0,0.1) 50%, 
+                    rgba(0,0,0,0.3) 100%
+                );
+                pointer-events: none;
+            }
+            
+            .play-button {
+                width: 90px;
+                height: 90px;
+                background: rgba(255, 255, 255, 0.95);
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.3s ease;
+                backdrop-filter: blur(10px);
+                z-index: 2;
+                position: relative;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            }
+            
+            .play-button:hover {
+                background: rgba(255, 255, 255, 1);
+                transform: scale(1.15);
+                box-shadow: 0 6px 25px rgba(0,0,0,0.4);
+            }
+            
+            .play-button::after {
+                content: '';
+                width: 0;
+                height: 0;
+                border-left: 30px solid #007AFF;
+                border-top: 18px solid transparent;
+                border-bottom: 18px solid transparent;
+                margin-left: 6px;
+            }
+            
+            /* Shorts format embed - вертикальный формат */
+            .video-embed {
+                width: 100%;
+                height: 500px; /* Высота как у превью */
+                border: none;
+                background: #000;
+            }
+            
+            /* Адаптивность для мобильных */
+            @media (max-width: 480px) {
+                .video-widget {
+                    max-width: 100%;
+                    margin: 15px 0;
+                }
+                
+                .video-thumbnail,
+                .video-embed {
+                    height: 400px; /* Меньше на мобильных */
+                }
+                
+                .play-button {
+                    width: 70px;
+                    height: 70px;
+                }
+                
+                .play-button::after {
+                    border-left: 25px solid #007AFF;
+                    border-top: 15px solid transparent;
+                    border-bottom: 15px solid transparent;
+                }
+            }
+            
+            /* Стиль для индикатора Shorts */
+            .shorts-badge {
+                position: absolute;
+                top: 15px;
+                left: 15px;
+                background: linear-gradient(45deg, #FF0000, #FF4444);
+                color: white;
+                padding: 6px 12px;
+                border-radius: 20px;
+                font-size: 12px;
+                font-weight: 600;
+                z-index: 3;
+                box-shadow: 0 2px 10px rgba(255,0,0,0.3);
+            }
+            
+            .video-info {
+                padding: 15px;
+                background: white;
+            }
+            
+            .video-title {
+                font-size: 18px;
+                font-weight: 600;
+                margin-bottom: 8px;
+                color: #333;
+            }
+            
+            .video-description {
+                color: #666;
+                margin-bottom: 10px;
+                line-height: 1.5;
+            }
+            
+            .video-meta {
+                display: flex;
+                justify-content: space-between;
+                font-size: 14px;
+                color: #888;
+            }
+            
+            .video-level {
+                background: var(--tg-theme-button-color, #007AFF);
+                color: white;
+                padding: 4px 8px;
+                border-radius: 12px;
+                font-size: 12px;
+            }
+            
+            .loading {
+                text-align: center;
+                padding: 20px;
+                color: #666;
+            }
+            
+            .error-message {
+                background: #ffebee;
+                color: #c62828;
+                padding: 15px;
+                border-radius: 8px;
+                margin: 10px 0;
+            }
+            
+            .success-message {
+                background: #e8f5e8;
+                color: #2e7d32;
+                padding: 15px;
+                border-radius: 8px;
+                margin: 10px 0;
+            }
+            
+            .video-controls {
+                display: flex;
+                gap: 10px;
+                margin-top: 10px;
+            }
+            
+            .control-btn {
+                flex: 1;
+                padding: 8px 12px;
+                border: 1px solid #ddd;
+                background: white;
+                color: #333;
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 14px;
+                transition: all 0.3s ease;
+            }
+            
+            .control-btn:hover {
+                background: #f5f5f5;
+            }
+            
+            .control-btn.active {
+                background: var(--tg-theme-button-color, #007AFF);
+                color: white;
+                border-color: var(--tg-theme-button-color, #007AFF);
             }
         </style>
     </head>
@@ -296,7 +684,10 @@ async def get_app():
                             name: '',
                             question: '',
                             contact: ''
-                        }
+                        },
+                        activeVideos: {}, // Отслеживает, какие видео активны
+                        loading: false,
+                        message: null
                     }
                 },
                 async mounted() {
@@ -304,6 +695,8 @@ async def get_app():
                     if (window.Telegram && window.Telegram.WebApp) {
                         window.Telegram.WebApp.ready();
                         window.Telegram.WebApp.expand();
+                        window.Telegram.WebApp.setHeaderColor('#007AFF');
+                        window.Telegram.WebApp.setBackgroundColor('#ffffff');
                     }
                     
                     // Загрузка данных
@@ -313,22 +706,31 @@ async def get_app():
                 methods: {
                     async loadProductInfo() {
                         try {
+                            this.loading = true;
                             const response = await fetch(`${API_BASE}/product-info`);
                             this.productInfo = await response.json();
                         } catch (error) {
                             console.error('Ошибка загрузки информации о продукте:', error);
+                            this.showMessage('Ошибка загрузки данных', 'error');
+                        } finally {
+                            this.loading = false;
                         }
                     },
                     async loadVideos() {
                         try {
+                            this.loading = true;
                             const response = await fetch(`${API_BASE}/videos`);
                             this.videos = await response.json();
                         } catch (error) {
                             console.error('Ошибка загрузки видео:', error);
+                            this.showMessage('Ошибка загрузки видео', 'error');
+                        } finally {
+                            this.loading = false;
                         }
                     },
                     async submitConsultation() {
                         try {
+                            this.loading = true;
                             const response = await fetch(`${API_BASE}/consultation`, {
                                 method: 'POST',
                                 headers: {
@@ -338,14 +740,47 @@ async def get_app():
                             });
                             
                             if (response.ok) {
-                                alert('Запрос отправлен! Мы свяжемся с вами в ближайшее время.');
+                                this.showMessage('Запрос отправлен! Мы свяжемся с вами в ближайшее время.', 'success');
                                 this.consultationForm = { name: '', question: '', contact: '' };
                                 this.currentView = 'menu';
                             }
                         } catch (error) {
                             console.error('Ошибка отправки запроса:', error);
-                            alert('Произошла ошибка. Попробуйте еще раз.');
+                            this.showMessage('Произошла ошибка. Попробуйте еще раз.', 'error');
+                        } finally {
+                            this.loading = false;
                         }
+                    },
+                    extractYouTubeId(url) {
+                        const patterns = [
+                            /(?:youtube\\.com\\/watch\\?v=|youtu\\.be\\/|youtube\\.com\\/shorts\\/)([^&\\n?#]+)/,
+                            /youtube\\.com\\/embed\\/([^&\\n?#]+)/
+                        ];
+                        
+                        for (let pattern of patterns) {
+                            const match = url.match(pattern);
+                            if (match) {
+                                return match[1];
+                            }
+                        }
+                        return null;
+                    },
+                    getThumbnailUrl(youtubeUrl) {
+                        const videoId = this.extractYouTubeId(youtubeUrl);
+                        return videoId ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg` : null;
+                    },
+                    getEmbedUrl(youtubeUrl) {
+                        const videoId = this.extractYouTubeId(youtubeUrl);
+                        // Добавляем параметры для лучшего отображения Shorts
+                        return videoId ? `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1&fs=1&autoplay=0&controls=1&mute=0&loop=0` : null;
+                    },
+                    
+                    isShorts(youtubeUrl) {
+                        return youtubeUrl.includes('/shorts/');
+                    },
+                    toggleVideo(videoId) {
+                        this.activeVideos[videoId] = !this.activeVideos[videoId];
+                        this.$forceUpdate(); // Принудительное обновление Vue
                     },
                     openYoutube(url) {
                         if (window.Telegram && window.Telegram.WebApp) {
@@ -353,14 +788,38 @@ async def get_app():
                         } else {
                             window.open(url, '_blank');
                         }
+                    },
+                    showMessage(text, type = 'info') {
+                        this.message = { text, type };
+                        setTimeout(() => {
+                            this.message = null;
+                        }, 5000);
+                    },
+                    getLevelColor(level) {
+                        const colors = {
+                            'начинающий': '#4CAF50',
+                            'средний': '#FF9800', 
+                            'продвинутый': '#F44336'
+                        };
+                        return colors[level] || '#007AFF';
                     }
                 },
                 template: `
                     <div class="container">
+                        <!-- Сообщения -->
+                        <div v-if="message" :class="'message ' + message.type + '-message'">
+                            {{ message.text }}
+                        </div>
+                        
+                        <!-- Индикатор загрузки -->
+                        <div v-if="loading" class="loading">
+                            ⏳ Загрузка...
+                        </div>
+                        
                         <!-- Главное меню -->
                         <div v-if="currentView === 'menu'">
-                            <h2>Добро пожаловать!</h2>
-                            <p>Выберите нужный раздел:</p>
+                            <h2>🏋️ Добро пожаловать!</h2>
+                            <p>Выберите нужный раздел для работы с тренажером:</p>
                             
                             <a href="#" class="menu-item" @click="currentView = 'product'">
                                 📋 Ознакомиться с товаром
@@ -384,41 +843,96 @@ async def get_app():
                             <h2>{{ productInfo.name }}</h2>
                             <p>{{ productInfo.description }}</p>
                             
-                            <h3>Особенности:</h3>
+                            <h3>💡 Особенности:</h3>
                             <ul>
                                 <li v-for="feature in productInfo.features" :key="feature">
                                     {{ feature }}
                                 </li>
                             </ul>
                             
-                            <h3>Характеристики:</h3>
+                            <h3>📊 Характеристики:</h3>
                             <p><strong>Вес:</strong> {{ productInfo.specifications?.weight }}</p>
                             <p><strong>Размеры:</strong> {{ productInfo.specifications?.dimensions }}</p>
                             <p><strong>Максимальная нагрузка:</strong> {{ productInfo.specifications?.max_load }}</p>
                         </div>
                         
-                        <!-- Тренинг программа -->
-<div v-if="currentView === 'training'">
-    <a href="#" class="menu-item back-btn" @click="currentView = 'menu'">
-        ← Назад в меню
-    </a>
-    
-    <h2>Тренинг программа</h2>
-    <p>Видео-уроки для эффективного использования тренажера:</p>
-    
-        <!-- Image above videos -->
-            <img 
-                src="/static/photo-training_equipment.jpg" 
-                    alt="Тренажер" 
-                        style="width:100%; max-width:600px; border-radius:8px; margin:15px 0;">
-                    <div v-for="video in videos" :key="video.id" class="video-item">
-                        <h3>{{ video.title }}</h3>
-                        <p>{{ video.description }}</p>
-                        <p><strong>Уровень:</strong> {{ video.level }}</p>
-                        <p><strong>Длительность:</strong> {{ video.duration }}</p>
-                                <button class="submit-btn" @click="openYoutube(video.youtube_url)">
-                                    ▶️ Смотреть видео
-                                </button>
+                        <!-- Тренинг программа с улучшенными видео-виджетами -->
+                        <div v-if="currentView === 'training'">
+                            <a href="#" class="menu-item back-btn" @click="currentView = 'menu'">
+                                ← Назад в меню
+                            </a>
+                            
+                            <h2>🎯 Тренинг программа</h2>
+                            <p>Профессиональные видео-уроки для эффективного использования тренажера:</p>
+                            
+                            <!-- Image above videos -->
+                            <img 
+                                src="/static/photo-training_equipment.jpg" 
+                                alt="Тренажер" 
+                                style="width:100%; max-width:600px; border-radius:12px; margin:20px 0; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+                            
+                            <div v-for="video in videos" :key="video.id" class="video-item">
+                                <!-- Видео виджет оптимизированный для Shorts -->
+                                <div class="video-widget">
+                                    <!-- Превью или встроенное видео -->
+                                    <div v-if="!activeVideos[video.id]">
+                                        <div 
+                                            class="video-thumbnail" 
+                                            :style="{ 
+                                                backgroundImage: 'url(' + getThumbnailUrl(video.youtube_url) + ')',
+                                                backgroundSize: isShorts(video.youtube_url) ? 'cover' : 'contain',
+                                                backgroundRepeat: 'no-repeat'
+                                            }"
+                                            @click="toggleVideo(video.id)"
+                                        >
+                                            <!-- Бейдж для Shorts -->
+                                            <div v-if="isShorts(video.youtube_url)" class="shorts-badge">
+                                                📱 Shorts
+                                            </div>
+                                            <div class="play-button"></div>
+                                        </div>
+                                    </div>
+                                    <div v-else>
+                                        <iframe 
+                                            :src="getEmbedUrl(video.youtube_url)"
+                                            class="video-embed"
+                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                            allowfullscreen>
+                                        </iframe>
+                                    </div>
+                                    
+                                    <!-- Информация о видео -->
+                                    <div class="video-info">
+                                        <div class="video-title">{{ video.title }}</div>
+                                        <div class="video-description">{{ video.description }}</div>
+                                        <div class="video-meta">
+                                            <span>⏱️ {{ video.duration }}</span>
+                                            <span 
+                                                class="video-level" 
+                                                :style="{ backgroundColor: getLevelColor(video.level) }"
+                                            >
+                                                {{ video.level }}
+                                            </span>
+                                        </div>
+                                        
+                                        <!-- Управление видео -->
+                                        <div class="video-controls">
+                                            <button 
+                                                class="control-btn"
+                                                :class="{ active: activeVideos[video.id] }"
+                                                @click="toggleVideo(video.id)"
+                                            >
+                                                {{ activeVideos[video.id] ? '📱 Скрыть' : '▶️ Смотреть' }}
+                                            </button>
+                                            <button 
+                                                class="control-btn"
+                                                @click="openYoutube(video.youtube_url)"
+                                            >
+                                                🔗 YouTube
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -429,26 +943,45 @@ async def get_app():
                                 ← Назад в меню
                             </a>
                             
-                            <h2>Консультация</h2>
-                            <p>Задайте вопрос нашему специалисту:</p>
+                            <h2>💬 Консультация</h2>
+                            <p>Задайте вопрос нашему специалисту по использованию тренажера:</p>
                             
                             <div class="form-group">
                                 <label>Ваше имя:</label>
-                                <input type="text" v-model="consultationForm.name" placeholder="Введите имя">
+                                <input 
+                                    type="text" 
+                                    v-model="consultationForm.name" 
+                                    placeholder="Введите ваше имя"
+                                    :disabled="loading"
+                                >
                             </div>
                             
                             <div class="form-group">
                                 <label>Ваш вопрос:</label>
-                                <textarea v-model="consultationForm.question" placeholder="Опишите ваш вопрос" rows="4"></textarea>
+                                <textarea 
+                                    v-model="consultationForm.question" 
+                                    placeholder="Подробно опишите ваш вопрос или проблему" 
+                                    rows="4"
+                                    :disabled="loading"
+                                ></textarea>
                             </div>
                             
                             <div class="form-group">
                                 <label>Контакт для связи (не обязательно):</label>
-                                <input type="text" v-model="consultationForm.contact" placeholder="Телефон или email">
+                                <input 
+                                    type="text" 
+                                    v-model="consultationForm.contact" 
+                                    placeholder="Телефон, email или Telegram"
+                                    :disabled="loading"
+                                >
                             </div>
                             
-                            <button class="submit-btn" @click="submitConsultation" :disabled="!consultationForm.name || !consultationForm.question">
-                                Отправить вопрос
+                            <button 
+                                class="submit-btn" 
+                                @click="submitConsultation" 
+                                :disabled="!consultationForm.name || !consultationForm.question || loading"
+                            >
+                                {{ loading ? '⏳ Отправляем...' : '📤 Отправить вопрос' }}
                             </button>
                         </div>
                     </div>
@@ -459,23 +992,20 @@ async def get_app():
     </html>
     """)
 
-async def run_bot():
-    print("🚀 Запуск Telegram бота...")
-    await application.initialize()
-    await application.start()
-    await application.updater.start_polling()  # polling без закрытия loop
-    # await application.updater.stop() не вызываем
-
-
-@app.on_event("startup")
-async def startup_event():
-    # Запускаем бота в фоне через asyncio.create_task
-    asyncio.create_task(run_bot())
-
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     print("🚀 Запуск сервера...")
     print(f"📱 Mini App: http://localhost:{port}/app")
     print(f"📋 API docs: http://localhost:{port}/docs")
+    print(f"🔍 Health check: http://localhost:{port}/health")
     print("Для остановки нажмите Ctrl+C")
-    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
+    
+    # Конфигурация для uvicorn с правильной обработкой сигналов
+    uvicorn.run(
+        "main:app", 
+        host="0.0.0.0", 
+        port=port, 
+        reload=False,  # Отключаем reload для предотвращения конфликтов
+        access_log=True,
+        log_level="info"
+    )
