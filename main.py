@@ -16,6 +16,7 @@ import threading
 import re
 import logging
 
+
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -27,6 +28,9 @@ print("BOT_TOKEN:", BOT_TOKEN)
 telegram_app = None
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = str(update.effective_user.id)  # уникальный идентификатор пользователя
+    username = update.effective_user.username
+
     welcome_text = (
         "Здравствуйте, поздравляем вас с приобретением виброплатформы Royal Fit! 👏\n\n"
         "Здесь вы можете ознакомиться подробнее с тренажером, "
@@ -34,7 +38,10 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Удачи в ваших начинаниях!"
     )
     # Отправляем приветствие (без GIF для упрощения)
-    await update.message.reply_text(welcome_text)
+    await update.message.reply_animation(
+    animation=open("static/welcome.gif", "rb"),  # или путь к GIF
+    caption=welcome_text
+)
 
 def setup_telegram_handlers():
     """Настройка обработчиков команд Telegram"""
