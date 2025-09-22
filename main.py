@@ -15,6 +15,9 @@ from contextlib import asynccontextmanager
 import threading
 import re
 import logging
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import ContextTypes
+
 
 
 # Настройка логирования
@@ -27,8 +30,11 @@ print("BOT_TOKEN:", BOT_TOKEN)
 # Глобальная переменная для приложения бота
 telegram_app = None
 
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import ContextTypes
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = str(update.effective_user.id)  # уникальный идентификатор пользователя
+    user_id = str(update.effective_user.id)
     username = update.effective_user.username
 
     welcome_text = (
@@ -37,11 +43,22 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "правильным его использованием, видеоуроками и программами питания! "
         "Удачи в ваших начинаниях!"
     )
-    # Отправляем приветствие (без GIF для упрощения)
+    
+    # Создаем кнопку для перехода в Mini App
+    keyboard = [
+        [InlineKeyboardButton(
+            "🏋️ Открыть тренажер Mini App", 
+            web_app={"url": "https://your-app-domain.com/app"}  # Замените на ваш домен
+        )]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    # Отправляем приветствие с GIF и кнопкой
     await update.message.reply_animation(
-    animation=open("static/welcome.gif", "rb"),  # или путь к GIF
-    caption=welcome_text
-)
+        animation=open("static/welcome.gif", "rb"),
+        caption=welcome_text,
+        reply_markup=reply_markup
+    )
 
 def setup_telegram_handlers():
     """Настройка обработчиков команд Telegram"""
