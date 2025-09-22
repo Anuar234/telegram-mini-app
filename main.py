@@ -48,7 +48,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
         [InlineKeyboardButton(
             "🏋️ Открыть тренажер Mini App", 
-            web_app={"url": "https://your-app-domain.com/app"}  # Замените на ваш домен
+            web_app={"url": "https://web-production-81447.up.railway.app/app"}  # Замените на ваш домен
         )]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
