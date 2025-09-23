@@ -719,6 +719,86 @@ async def get_app():
                 color: white;
                 border-color: var(--tg-theme-button-color, #007AFF);
             }
+            
+            /* Стили для scroll down индикатора */
+            .scroll-indicator {
+                text-align: center;
+                margin: 30px 0;
+                padding: 20px;
+                background: linear-gradient(135deg, rgba(0,123,255,0.1) 0%, rgba(0,123,255,0.05) 100%);
+                border-radius: 16px;
+                border: 2px dashed rgba(0,123,255,0.3);
+                position: relative;
+                overflow: hidden;
+                animation: pulseGlow 2s ease-in-out infinite;
+            }
+            
+            @keyframes pulseGlow {
+                0%, 100% {
+                    box-shadow: 0 0 10px rgba(0,123,255,0.2);
+                    transform: translateY(0);
+                }
+                50% {
+                    box-shadow: 0 0 20px rgba(0,123,255,0.4);
+                    transform: translateY(-2px);
+                }
+            }
+            
+            .scroll-text {
+                font-size: 16px;
+                font-weight: 600;
+                color: var(--tg-theme-button-color, #007AFF);
+                margin-bottom: 10px;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+            }
+            
+            .scroll-arrow {
+                font-size: 24px;
+                color: var(--tg-theme-button-color, #007AFF);
+                animation: bounce 1.5s ease-in-out infinite;
+                display: inline-block;
+            }
+            
+            @keyframes bounce {
+                0%, 20%, 50%, 80%, 100% {
+                    transform: translateY(0);
+                }
+                40% {
+                    transform: translateY(-8px);
+                }
+                60% {
+                    transform: translateY(-4px);
+                }
+            }
+            
+            .scroll-subtitle {
+                font-size: 12px;
+                color: #666;
+                margin-top: 8px;
+                opacity: 0.8;
+            }
+            
+            /* Анимация появления при скролле */
+            .scroll-indicator::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: -100%;
+                width: 100%;
+                height: 100%;
+                background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+                animation: shine 3s ease-in-out infinite;
+            }
+            
+            @keyframes shine {
+                0% {
+                    left: -100%;
+                }
+                100% {
+                    left: 100%;
+                }
+            }
         </style>
     </head>
     <body>
@@ -907,6 +987,13 @@ async def get_app():
                                 src="/static/photo-training_equipment.jpg" 
                                 alt="Тренажер" 
                                 style="width:100%; max-width:600px; border-radius:12px; margin:20px 0; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+                            
+                            <!-- Scroll Down индикатор -->
+                            <div class="scroll-indicator">
+                                <div class="scroll-text">🎥 Scroll Down for Videos</div>
+                                <div class="scroll-arrow">↓</div>
+                                <div class="scroll-subtitle">Прокрутите вниз для просмотра упражнений</div>
+                            </div>
                             
                             <div v-for="video in videos" :key="video.id" class="video-item">
                                 <!-- Видео виджет оптимизированный для Shorts -->
