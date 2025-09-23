@@ -330,12 +330,6 @@ async def webhook(request: Request):
         logger.error(f"❌ Webhook error: {e}")
         return {"ok": False, "error": str(e)}
 
-
-
-
-
-
-
 @app.get("/")
 async def root():
     # Возвращаем HTML с редиректом
@@ -390,9 +384,6 @@ async def send_consultation_request(request: ConsultationRequest):
     # В реальном приложении здесь была бы отправка в Telegram или сохранение в БД
     print(f"Новый запрос на консультацию от {request.name}: {request.question}")
     return {"message": "Запрос на консультацию отправлен", "status": "success"}
-
-# Подключение статических файлов убираем - не нужно для деплоя
-# app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Главная страница (будет отдавать Vue.js приложение)
 @app.get("/app")
@@ -799,6 +790,137 @@ async def get_app():
                     left: 100%;
                 }
             }
+            
+            /* Плавающий индикатор взлетной полосы */
+            .runway-indicator {
+                position: fixed;
+                bottom: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                z-index: 1000;
+                background: rgba(0, 0, 0, 0.9);
+                backdrop-filter: blur(10px);
+                border-radius: 25px;
+                padding: 12px 20px;
+                display: flex;
+                align-items: center;
+                gap: 15px;
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                cursor: pointer;
+                transition: all 0.3s ease;
+                opacity: 1;
+                animation: floatUp 3s ease-in-out infinite;
+            }
+            
+            .runway-indicator:hover {
+                transform: translateX(-50%) scale(1.05);
+                background: rgba(0, 0, 0, 0.95);
+            }
+            
+            .runway-indicator.hidden {
+                opacity: 0;
+                pointer-events: none;
+                transform: translateX(-50%) translateY(100px);
+            }
+            
+            @keyframes floatUp {
+                0%, 100% {
+                    transform: translateX(-50%) translateY(0);
+                }
+                50% {
+                    transform: translateX(-50%) translateY(-5px);
+                }
+            }
+            
+            /* Взлетная полоса с мигающими огнями */
+            .runway-lights {
+                display: flex;
+                gap: 8px;
+                align-items: center;
+            }
+            
+            .runway-light {
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                background: #00ff00;
+                animation: runway-blink 1.5s ease-in-out infinite;
+                box-shadow: 0 0 10px #00ff00;
+            }
+            
+            .runway-light:nth-child(1) { animation-delay: 0s; }
+            .runway-light:nth-child(2) { animation-delay: 0.2s; }
+            .runway-light:nth-child(3) { animation-delay: 0.4s; }
+            .runway-light:nth-child(4) { animation-delay: 0.6s; }
+            .runway-light:nth-child(5) { animation-delay: 0.8s; }
+            
+            @keyframes runway-blink {
+                0%, 40% {
+                    opacity: 1;
+                    background: #00ff00;
+                    box-shadow: 0 0 15px #00ff00, 0 0 25px #00ff00;
+                }
+                50%, 100% {
+                    opacity: 0.3;
+                    background: #004400;
+                    box-shadow: 0 0 5px #004400;
+                }
+            }
+            
+            .runway-text {
+                color: white;
+                font-size: 14px;
+                font-weight: 600;
+                text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+                white-space: nowrap;
+            }
+            
+            .runway-arrow {
+                color: #00ff00;
+                font-size: 18px;
+                animation: runway-arrow-pulse 1s ease-in-out infinite;
+                text-shadow: 0 0 10px #00ff00;
+            }
+            
+            @keyframes runway-arrow-pulse {
+                0%, 50% {
+                    transform: translateY(0);
+                    opacity: 1;
+                }
+                100% {
+                    transform: translateY(3px);
+                    opacity: 0.7;
+                }
+            }
+            
+            /* Дополнительные эффекты для реализма */
+            .runway-indicator::before {
+                content: '';
+                position: absolute;
+                top: -2px;
+                left: -2px;
+                right: -2px;
+                bottom: -2px;
+                background: linear-gradient(45deg, 
+                    rgba(0, 255, 0, 0.3) 0%, 
+                    transparent 25%, 
+                    transparent 75%, 
+                    rgba(0, 255, 0, 0.3) 100%
+                );
+                border-radius: 27px;
+                animation: runway-border-glow 2s linear infinite;
+                z-index: -1;
+            }
+            
+            @keyframes runway-border-glow {
+                0% {
+                    transform: rotate(0deg);
+                }
+                100% {
+                    transform: rotate(360deg);
+                }
+            }
         </style>
     </head>
     <body>
@@ -816,7 +938,8 @@ async def get_app():
                         videos: [],
                         activeVideos: {}, // Отслеживает, какие видео активны
                         loading: false,
-                        message: null
+                        message: null,
+                        showRunwayIndicator: false
                     }
                 },
                 async mounted() {
@@ -831,6 +954,12 @@ async def get_app():
                     // Загрузка данных
                     await this.loadProductInfo();
                     await this.loadVideos();
+                    
+                    // Обработчик скролла для показа/скрытия индикатора взлетной полосы
+                    window.addEventListener('scroll', this.handleScroll);
+                },
+                beforeUnmount() {
+                    window.removeEventListener('scroll', this.handleScroll);
                 },
                 methods: {
                     async loadProductInfo() {
@@ -919,6 +1048,43 @@ async def get_app():
                             'продвинутый': '#F44336'
                         };
                         return colors[level] || '#007AFF';
+                    },
+                    handleScroll() {
+                        // Показываем индикатор взлетной полосы только в разделе тренинг программы
+                        if (this.currentView === 'training') {
+                            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                            const windowHeight = window.innerHeight;
+                            const documentHeight = document.documentElement.scrollHeight;
+                            
+                            // Показываем индикатор, если не долистали до конца
+                            this.showRunwayIndicator = scrollTop + windowHeight < documentHeight - 100;
+                        } else {
+                            this.showRunwayIndicator = false;
+                        }
+                    },
+                    scrollToVideos() {
+                        // Находим первое видео и плавно скроллим к нему
+                        const firstVideo = document.querySelector('.video-item');
+                        if (firstVideo) {
+                            firstVideo.scrollIntoView({ 
+                                behavior: 'smooth', 
+                                block: 'start',
+                                inline: 'nearest'
+                            });
+                        }
+                    }
+                },
+                watch: {
+                    currentView(newView) {
+                        // Сбрасываем индикатор при смене вида
+                        if (newView !== 'training') {
+                            this.showRunwayIndicator = false;
+                        } else {
+                            // Проверяем нужность индикатора при переходе в тренинг
+                            this.$nextTick(() => {
+                                this.handleScroll();
+                            });
+                        }
                     }
                 },
                 template: `
@@ -1058,6 +1224,23 @@ async def get_app():
                                     </div>
                                 </div>
                             </div>
+                        </div>
+                        
+                        <!-- Плавающий индикатор взлетной полосы -->
+                        <div 
+                            v-if="showRunwayIndicator && currentView === 'training'"
+                            class="runway-indicator"
+                            @click="scrollToVideos"
+                        >
+                            <div class="runway-lights">
+                                <div class="runway-light"></div>
+                                <div class="runway-light"></div>
+                                <div class="runway-light"></div>
+                                <div class="runway-light"></div>
+                                <div class="runway-light"></div>
+                            </div>
+                            <div class="runway-text">Scroll to Videos</div>
+                            <div class="runway-arrow">✈️</div>
                         </div>
                     </div>
                 `
