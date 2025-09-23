@@ -1240,7 +1240,6 @@ async def get_app():
                                 <div class="runway-light"></div>
                             </div>
                             <div class="runway-text">Scroll to Videos</div>
-                            <div class="runway-arrow">✈️</div>
                         </div>
                     </div>
                 `
