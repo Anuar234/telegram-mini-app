@@ -1150,7 +1150,7 @@ async def get_app():
                             
                             <!-- Image above videos -->
                             <img 
-                                src="/static/photo-training_equipment.jpg" 
+                                src="/static/photo-training_equipment.webp" 
                                 alt="Тренажер" 
                                 style="width:100%; max-width:600px; border-radius:12px; margin:20px 0; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
                             
