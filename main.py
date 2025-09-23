@@ -482,6 +482,36 @@ async def get_app():
                 box-shadow: none;
             }
             
+            /* WhatsApp кнопка стиль */
+            .whatsapp-btn {
+                background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+                color: white;
+                position: relative;
+                overflow: hidden;
+            }
+            
+            .whatsapp-btn:hover {
+                background: linear-gradient(135deg, #22BF5B 0%, #0F7A6D 100%);
+                transform: translateY(-2px);
+                box-shadow: 0 6px 20px rgba(37, 211, 102, 0.4);
+            }
+            
+            .whatsapp-btn::before {
+                content: '';
+                position: absolute;
+                top: -50%;
+                left: -50%;
+                width: 200%;
+                height: 200%;
+                background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+                transition: all 0.6s;
+                transform: rotate(45deg) translateX(-100%);
+            }
+            
+            .whatsapp-btn:hover::before {
+                transform: rotate(45deg) translateX(100%);
+            }
+            
             /* Стили для видео-виджета (оптимизировано для Shorts) */
             .video-widget {
                 position: relative;
@@ -704,11 +734,6 @@ async def get_app():
                         currentView: 'menu',
                         productInfo: {},
                         videos: [],
-                        consultationForm: {
-                            name: '',
-                            question: '',
-                            contact: ''
-                        },
                         activeVideos: {}, // Отслеживает, какие видео активны
                         loading: false,
                         message: null
@@ -752,27 +777,15 @@ async def get_app():
                             this.loading = false;
                         }
                     },
-                    async submitConsultation() {
-                        try {
-                            this.loading = true;
-                            const response = await fetch(`${API_BASE}/consultation`, {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json'
-                                },
-                                body: JSON.stringify(this.consultationForm)
-                            });
-                            
-                            if (response.ok) {
-                                this.showMessage('Запрос отправлен! Мы свяжемся с вами в ближайшее время.', 'success');
-                                this.consultationForm = { name: '', question: '', contact: '' };
-                                this.currentView = 'menu';
-                            }
-                        } catch (error) {
-                            console.error('Ошибка отправки запроса:', error);
-                            this.showMessage('Произошла ошибка. Попробуйте еще раз.', 'error');
-                        } finally {
-                            this.loading = false;
+                    openWhatsApp() {
+                        const whatsappUrl = 'https://api.whatsapp.com/send?phone=77087720751';
+                        
+                        if (window.Telegram && window.Telegram.WebApp) {
+                            // В Telegram Mini App открываем через Telegram API
+                            window.Telegram.WebApp.openLink(whatsappUrl);
+                        } else {
+                            // В обычном браузере открываем в новой вкладке
+                            window.open(whatsappUrl, '_blank');
                         }
                     },
                     extractYouTubeId(url) {
@@ -853,7 +866,7 @@ async def get_app():
                                 🎥 Тренинг программа
                             </a>
                             
-                            <a href="#" class="menu-item" @click="currentView = 'consultation'">
+                            <a href="#" class="menu-item whatsapp-btn" @click="openWhatsApp()">
                                 💬 Написать консультанту
                             </a>
                         </div>
@@ -958,55 +971,6 @@ async def get_app():
                                     </div>
                                 </div>
                             </div>
-                        </div>
-
-                        
-                        <!-- Консультация -->
-                        <div v-if="currentView === 'consultation'">
-                            <a href="#" class="menu-item back-btn" @click="currentView = 'menu'">
-                                ← Назад в меню
-                            </a>
-                            
-                            <h2>💬 Консультация</h2>
-                            <p>Задайте вопрос нашему специалисту по использованию тренажера:</p>
-                            
-                            <div class="form-group">
-                                <label>Ваше имя:</label>
-                                <input 
-                                    type="text" 
-                                    v-model="consultationForm.name" 
-                                    placeholder="Введите ваше имя"
-                                    :disabled="loading"
-                                >
-                            </div>
-                            
-                            <div class="form-group">
-                                <label>Ваш вопрос:</label>
-                                <textarea 
-                                    v-model="consultationForm.question" 
-                                    placeholder="Подробно опишите ваш вопрос или проблему" 
-                                    rows="4"
-                                    :disabled="loading"
-                                ></textarea>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label>Контакт для связи (не обязательно):</label>
-                                <input 
-                                    type="text" 
-                                    v-model="consultationForm.contact" 
-                                    placeholder="Телефон, email или Telegram"
-                                    :disabled="loading"
-                                >
-                            </div>
-                            
-                            <button 
-                                class="submit-btn" 
-                                @click="submitConsultation" 
-                                :disabled="!consultationForm.name || !consultationForm.question || loading"
-                            >
-                                {{ loading ? '⏳ Отправляем...' : '📤 Отправить вопрос' }}
-                            </button>
                         </div>
                     </div>
                 `
