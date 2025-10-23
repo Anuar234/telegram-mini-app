@@ -1,7 +1,7 @@
 import requests
 import os
 
-BOT_TOKEN = os.getenv("BOT_TOKEN") # Добавь BOT_TOKEN в Railway secrets
+BOT_TOKEN = os.getenv("BOT_TOKEN") # Добавь BOT_TOKEN в Railway secret
 
 WEBHOOK_URL = "https://web-production-81447.up.railway.app/webhook"
 
