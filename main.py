@@ -48,7 +48,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
         [InlineKeyboardButton(
             "🏋️ Открыть тренажер Mini App", 
-            web_app={"url": "https://web-production-81447.up.railway.app/app"}  # Замените на ваш домен
+            web_app={"url": "https://web-production-81447.up.railway.app/app"}
         )]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -70,7 +70,6 @@ def setup_telegram_handlers():
 
 async def start_polling():
     """Запуск polling в отдельной функции (устаревший метод)"""
-    # Эта функция заменена на start_polling_with_retry
     pass
 
 @asynccontextmanager
@@ -87,15 +86,12 @@ async def lifespan(app: FastAPI):
         
         # ПРИНУДИТЕЛЬНАЯ ОЧИСТКА всех активных соединений
         try:
-            # Сначала пытаемся получить информацию о боте
             bot_info = await telegram_app.bot.get_me()
             logger.info(f"Bot info: {bot_info.username}")
             
-            # Принудительно очищаем все pending updates и webhook
             await telegram_app.bot.delete_webhook(drop_pending_updates=True)
             logger.info("✅ Webhook удален, pending updates очищены")
             
-            # Ждем немного для полной очистки
             await asyncio.sleep(2)
             
         except Exception as e:
@@ -103,25 +99,20 @@ async def lifespan(app: FastAPI):
         
         await telegram_app.start()
         
-        # Используем более мягкий режим запуска polling
         try:
-            # Запускаем polling с retry логикой
             polling_task = asyncio.create_task(start_polling_with_retry())
             logger.info("✅ Telegram бот запущен успешно")
         except Exception as e:
             logger.error(f"❌ Ошибка запуска polling: {e}")
-            # Если polling не работает, продолжаем без него (можно использовать webhook)
         
     except Exception as e:
         logger.error(f"❌ Ошибка запуска Telegram бота: {e}")
     
-    yield  # Приложение работает
+    yield
     
-    # Остановка при завершении
     print("🛑 Остановка приложения...")
     try:
         if telegram_app:
-            # Останавливаем updater перед остановкой приложения
             if telegram_app.updater and telegram_app.updater.running:
                 await telegram_app.updater.stop()
                 logger.info("✅ Updater остановлен")
@@ -142,7 +133,6 @@ async def start_polling_with_retry():
         try:
             logger.info(f"Попытка запуска polling #{attempt + 1}")
             
-            # Настройки polling с более коротким timeout
             await telegram_app.updater.start_polling(
                 poll_interval=2.0,
                 timeout=20,
@@ -163,10 +153,9 @@ async def start_polling_with_retry():
             if attempt < max_retries - 1:
                 logger.info(f"Повтор через {retry_delay} секунд...")
                 await asyncio.sleep(retry_delay)
-                retry_delay *= 2  # Экспоненциальная задержка
+                retry_delay *= 2
             else:
                 logger.error("❌ Все попытки запуска polling исчерпаны")
-                # Можно переключиться на webhook режим
                 logger.info("💡 Рассмотрите использование webhook вместо polling")
                 break
 
@@ -177,7 +166,6 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS middleware для локальной разработки
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -195,12 +183,19 @@ class Video(BaseModel):
     description: str
     youtube_url: str
     duration: str
-    level: str  # начинающий, средний, продвинутый
+    level: str
 
 class ConsultationRequest(BaseModel):
     name: str
     question: str
     contact: Optional[str] = None
+
+class NutritionImage(BaseModel):
+    id: int
+    title: str
+    description: str
+    image_url: str
+    day: int
 
 def extract_youtube_id(url):
     """Извлекает ID видео из YouTube URL"""
@@ -215,7 +210,7 @@ def extract_youtube_id(url):
             return match.group(1)
     return None
 
-# Временная база данных (в продакшене заменить на настоящую БД)
+# Временная база данных
 VIDEOS_DB = [
     {
         "id": 1,
@@ -240,6 +235,59 @@ VIDEOS_DB = [
         "youtube_url": "https://www.youtube.com/shorts/fBdKukhlKEA",
         "duration": "20:15",
         "level": "продвинутый"
+    }
+]
+
+# База данных рационов питания на 7 дней
+NUTRITION_DB = [
+    {
+        "id": 1,
+        "title": "День 1 - Понедельник",
+        "description": "Сбалансированное начало недели",
+        "image_url": "/static/nutrition/day1.jpg",
+        "day": 1
+    },
+    {
+        "id": 2,
+        "title": "День 2 - Вторник",
+        "description": "Белковый день",
+        "image_url": "/static/nutrition/day2.jpg",
+        "day": 2
+    },
+    {
+        "id": 3,
+        "title": "День 3 - Среда",
+        "description": "Овощной рацион",
+        "image_url": "/static/nutrition/day3.jpg",
+        "day": 3
+    },
+    {
+        "id": 4,
+        "title": "День 4 - Четверг",
+        "description": "Энергетический день",
+        "image_url": "/static/nutrition/day4.jpg",
+        "day": 4
+    },
+    {
+        "id": 5,
+        "title": "День 5 - Пятница",
+        "description": "Рыбный день",
+        "image_url": "/static/nutrition/day5.jpg",
+        "day": 5
+    },
+    {
+        "id": 6,
+        "title": "День 6 - Суббота",
+        "description": "Легкий рацион",
+        "image_url": "/static/nutrition/day6.jpg",
+        "day": 6
+    },
+    {
+        "id": 7,
+        "title": "День 7 - Воскресенье",
+        "description": "Восстановительный день",
+        "image_url": "/static/nutrition/day7.jpg",
+        "day": 7
     }
 ]
 
@@ -283,24 +331,19 @@ async def reset_bot():
         logger.info("🔄 Начинаем сброс бота...")
         
         if telegram_app:
-            # Останавливаем updater
             if telegram_app.updater and telegram_app.updater.running:
                 await telegram_app.updater.stop()
                 logger.info("✅ Updater остановлен")
             
-            # Останавливаем приложение
             await telegram_app.stop()
             await telegram_app.shutdown()
             logger.info("✅ Приложение остановлено")
             
-            # Очищаем webhook
             await telegram_app.bot.delete_webhook(drop_pending_updates=True)
             logger.info("✅ Webhook очищен")
         
-        # Ждем очистки
         await asyncio.sleep(3)
         
-        # Пересоздаем приложение
         telegram_app = setup_telegram_handlers()
         await telegram_app.initialize()
         await telegram_app.start()
@@ -312,9 +355,6 @@ async def reset_bot():
     except Exception as e:
         logger.error(f"❌ Ошибка сброса бота: {e}")
         return {"status": "error", "message": str(e)}
-
-# Удаляем старые функции запуска
-# async def run_bot() и @app.on_event("startup") больше не нужны
 
 @app.post("/webhook")
 async def webhook(request: Request):
@@ -332,7 +372,6 @@ async def webhook(request: Request):
 
 @app.get("/")
 async def root():
-    # Возвращаем HTML с редиректом
     return HTMLResponse(content="""
     <!DOCTYPE html>
     <html>
@@ -378,14 +417,17 @@ async def get_videos_by_level(level: str):
     filtered_videos = [v for v in VIDEOS_DB if v["level"] == level]
     return filtered_videos
 
+@app.get("/api/nutrition", response_model=List[NutritionImage])
+async def get_nutrition():
+    """Получить рацион питания на 7 дней"""
+    return NUTRITION_DB
+
 @app.post("/api/consultation")
 async def send_consultation_request(request: ConsultationRequest):
     """Отправить запрос на консультацию"""
-    # В реальном приложении здесь была бы отправка в Telegram или сохранение в БД
     print(f"Новый запрос на консультацию от {request.name}: {request.question}")
     return {"message": "Запрос на консультацию отправлен", "status": "success"}
 
-# Главная страница (будет отдавать Vue.js приложение)
 @app.get("/app")
 async def get_app():
     return HTMLResponse(content="""
@@ -424,7 +466,7 @@ async def get_app():
                 opacity: 0.8;
                 transform: translateY(-1px);
             }
-            .video-item {
+            .video-item, .nutrition-item {
                 border: 1px solid #e0e0e0;
                 border-radius: 12px;
                 padding: 20px;
@@ -436,6 +478,54 @@ async def get_app():
                 background: var(--tg-theme-secondary-bg-color, #f0f0f0);
                 color: var(--tg-theme-text-color, #000000);
                 margin-bottom: 20px;
+            }
+            .nutrition-image {
+                width: 100%;
+                max-width: 600px;
+                border-radius: 12px;
+                margin: 15px auto;
+                display: block;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                transition: transform 0.3s ease;
+            }
+            .nutrition-image:hover {
+                transform: scale(1.02);
+            }
+            .nutrition-title {
+                font-size: 20px;
+                font-weight: 600;
+                margin: 15px 0 10px 0;
+                color: #333;
+            }
+            .nutrition-description {
+                color: #666;
+                margin-bottom: 15px;
+            }
+            .day-badge {
+                display: inline-block;
+                background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);
+                color: white;
+                padding: 6px 14px;
+                border-radius: 20px;
+                font-size: 14px;
+                font-weight: 600;
+                box-shadow: 0 2px 8px rgba(255,107,107,0.3);
+            }
+            .whatsapp-btn {
+                background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+                color: white;
+                position: relative;
+                overflow: hidden;
+            }
+            .whatsapp-btn:hover {
+                background: linear-gradient(135deg, #22BF5B 0%, #0F7A6D 100%);
+                transform: translateY(-2px);
+                box-shadow: 0 6px 20px rgba(37, 211, 102, 0.4);
+            }
+            .loading {
+                text-align: center;
+                padding: 20px;
+                color: #666;
             }
             .form-group {
                 margin: 15px 0;
@@ -466,44 +556,6 @@ async def get_app():
                 transform: translateY(-1px);
                 box-shadow: 0 4px 12px rgba(0,123,255,0.3);
             }
-            .submit-btn:disabled {
-                opacity: 0.6;
-                cursor: not-allowed;
-                transform: none;
-                box-shadow: none;
-            }
-            
-            /* WhatsApp кнопка стиль */
-            .whatsapp-btn {
-                background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
-                color: white;
-                position: relative;
-                overflow: hidden;
-            }
-            
-            .whatsapp-btn:hover {
-                background: linear-gradient(135deg, #22BF5B 0%, #0F7A6D 100%);
-                transform: translateY(-2px);
-                box-shadow: 0 6px 20px rgba(37, 211, 102, 0.4);
-            }
-            
-            .whatsapp-btn::before {
-                content: '';
-                position: absolute;
-                top: -50%;
-                left: -50%;
-                width: 200%;
-                height: 200%;
-                background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
-                transition: all 0.6s;
-                transform: rotate(45deg) translateX(-100%);
-            }
-            
-            .whatsapp-btn:hover::before {
-                transform: rotate(45deg) translateX(100%);
-            }
-            
-            /* Стили для видео-виджета (оптимизировано для Shorts) */
             .video-widget {
                 position: relative;
                 width: 100%;
@@ -514,11 +566,10 @@ async def get_app():
                 box-shadow: 0 8px 24px rgba(0,0,0,0.15);
                 background: #000;
             }
-            
             .video-thumbnail {
                 position: relative;
                 width: 100%;
-                height: 500px; /* Увеличена высота для вертикального формата */
+                height: 500px;
                 background-size: cover;
                 background-position: center;
                 cursor: pointer;
@@ -528,28 +579,6 @@ async def get_app():
                 transition: all 0.3s ease;
                 background-color: #000;
             }
-            
-            .video-thumbnail:hover {
-                transform: scale(1.01);
-            }
-            
-            /* Градиент поверх превью для лучшей видимости кнопки */
-            .video-thumbnail::before {
-                content: '';
-                position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: linear-gradient(
-                    135deg, 
-                    rgba(0,0,0,0.3) 0%, 
-                    rgba(0,0,0,0.1) 50%, 
-                    rgba(0,0,0,0.3) 100%
-                );
-                pointer-events: none;
-            }
-            
             .play-button {
                 width: 90px;
                 height: 90px;
@@ -559,18 +588,10 @@ async def get_app():
                 align-items: center;
                 justify-content: center;
                 transition: all 0.3s ease;
-                backdrop-filter: blur(10px);
                 z-index: 2;
                 position: relative;
                 box-shadow: 0 4px 20px rgba(0,0,0,0.3);
             }
-            
-            .play-button:hover {
-                background: rgba(255, 255, 255, 1);
-                transform: scale(1.15);
-                box-shadow: 0 6px 25px rgba(0,0,0,0.4);
-            }
-            
             .play-button::after {
                 content: '';
                 width: 0;
@@ -580,346 +601,11 @@ async def get_app():
                 border-bottom: 18px solid transparent;
                 margin-left: 6px;
             }
-            
-            /* Shorts format embed - вертикальный формат */
             .video-embed {
                 width: 100%;
-                height: 500px; /* Высота как у превью */
+                height: 500px;
                 border: none;
                 background: #000;
-            }
-            
-            /* Адаптивность для мобильных */
-            @media (max-width: 480px) {
-                .video-widget {
-                    max-width: 100%;
-                    margin: 15px 0;
-                }
-                
-                .video-thumbnail,
-                .video-embed {
-                    height: 400px; /* Меньше на мобильных */
-                }
-                
-                .play-button {
-                    width: 70px;
-                    height: 70px;
-                }
-                
-                .play-button::after {
-                    border-left: 25px solid #007AFF;
-                    border-top: 15px solid transparent;
-                    border-bottom: 15px solid transparent;
-                }
-            }
-            
-            /* Стиль для индикатора Shorts */
-            .shorts-badge {
-                position: absolute;
-                top: 15px;
-                left: 15px;
-                background: linear-gradient(45deg, #FF0000, #FF4444);
-                color: white;
-                padding: 6px 12px;
-                border-radius: 20px;
-                font-size: 12px;
-                font-weight: 600;
-                z-index: 3;
-                box-shadow: 0 2px 10px rgba(255,0,0,0.3);
-            }
-            
-            .video-info {
-                padding: 15px;
-                background: white;
-            }
-            
-            .video-title {
-                font-size: 18px;
-                font-weight: 600;
-                margin-bottom: 8px;
-                color: #333;
-            }
-            
-            .video-description {
-                color: #666;
-                margin-bottom: 10px;
-                line-height: 1.5;
-            }
-            
-            .video-meta {
-                display: flex;
-                justify-content: space-between;
-                font-size: 14px;
-                color: #888;
-            }
-            
-            .video-level {
-                background: var(--tg-theme-button-color, #007AFF);
-                color: white;
-                padding: 4px 8px;
-                border-radius: 12px;
-                font-size: 12px;
-            }
-            
-            .loading {
-                text-align: center;
-                padding: 20px;
-                color: #666;
-            }
-            
-            .error-message {
-                background: #ffebee;
-                color: #c62828;
-                padding: 15px;
-                border-radius: 8px;
-                margin: 10px 0;
-            }
-            
-            .success-message {
-                background: #e8f5e8;
-                color: #2e7d32;
-                padding: 15px;
-                border-radius: 8px;
-                margin: 10px 0;
-            }
-            
-            .video-controls {
-                display: flex;
-                gap: 10px;
-                margin-top: 10px;
-            }
-            
-            .control-btn {
-                flex: 1;
-                padding: 8px 12px;
-                border: 1px solid #ddd;
-                background: white;
-                color: #333;
-                border-radius: 6px;
-                cursor: pointer;
-                font-size: 14px;
-                transition: all 0.3s ease;
-            }
-            
-            .control-btn:hover {
-                background: #f5f5f5;
-            }
-            
-            .control-btn.active {
-                background: var(--tg-theme-button-color, #007AFF);
-                color: white;
-                border-color: var(--tg-theme-button-color, #007AFF);
-            }
-            
-            /* Стили для scroll down индикатора */
-            .scroll-indicator {
-                text-align: center;
-                margin: 30px 0;
-                padding: 20px;
-                background: linear-gradient(135deg, rgba(0,123,255,0.1) 0%, rgba(0,123,255,0.05) 100%);
-                border-radius: 16px;
-                border: 2px dashed rgba(0,123,255,0.3);
-                position: relative;
-                overflow: hidden;
-                animation: pulseGlow 2s ease-in-out infinite;
-            }
-            
-            @keyframes pulseGlow {
-                0%, 100% {
-                    box-shadow: 0 0 10px rgba(0,123,255,0.2);
-                    transform: translateY(0);
-                }
-                50% {
-                    box-shadow: 0 0 20px rgba(0,123,255,0.4);
-                    transform: translateY(-2px);
-                }
-            }
-            
-            .scroll-text {
-                font-size: 16px;
-                font-weight: 600;
-                color: var(--tg-theme-button-color, #007AFF);
-                margin-bottom: 10px;
-                text-transform: uppercase;
-                letter-spacing: 1px;
-            }
-            
-            .scroll-arrow {
-                font-size: 24px;
-                color: var(--tg-theme-button-color, #007AFF);
-                animation: bounce 1.5s ease-in-out infinite;
-                display: inline-block;
-            }
-            
-            @keyframes bounce {
-                0%, 20%, 50%, 80%, 100% {
-                    transform: translateY(0);
-                }
-                40% {
-                    transform: translateY(-8px);
-                }
-                60% {
-                    transform: translateY(-4px);
-                }
-            }
-            
-            .scroll-subtitle {
-                font-size: 12px;
-                color: #666;
-                margin-top: 8px;
-                opacity: 0.8;
-            }
-            
-            /* Анимация появления при скролле */
-            .scroll-indicator::before {
-                content: '';
-                position: absolute;
-                top: 0;
-                left: -100%;
-                width: 100%;
-                height: 100%;
-                background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-                animation: shine 3s ease-in-out infinite;
-            }
-            
-            @keyframes shine {
-                0% {
-                    left: -100%;
-                }
-                100% {
-                    left: 100%;
-                }
-            }
-            
-            /* Плавающий индикатор взлетной полосы */
-            .runway-indicator {
-                position: fixed;
-                bottom: 20px;
-                left: 50%;
-                transform: translateX(-50%);
-                z-index: 1000;
-                background: rgba(0, 0, 0, 0.9);
-                backdrop-filter: blur(10px);
-                border-radius: 25px;
-                padding: 12px 20px;
-                display: flex;
-                align-items: center;
-                gap: 15px;
-                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-                border: 1px solid rgba(255, 255, 255, 0.1);
-                cursor: pointer;
-                transition: all 0.3s ease;
-                opacity: 1;
-                animation: floatUp 3s ease-in-out infinite;
-            }
-            
-            .runway-indicator:hover {
-                transform: translateX(-50%) scale(1.05);
-                background: rgba(0, 0, 0, 0.95);
-            }
-            
-            .runway-indicator.hidden {
-                opacity: 0;
-                pointer-events: none;
-                transform: translateX(-50%) translateY(100px);
-            }
-            
-            @keyframes floatUp {
-                0%, 100% {
-                    transform: translateX(-50%) translateY(0);
-                }
-                50% {
-                    transform: translateX(-50%) translateY(-5px);
-                }
-            }
-            
-            /* Взлетная полоса с мигающими огнями */
-            .runway-lights {
-                display: flex;
-                gap: 8px;
-                align-items: center;
-            }
-            
-            .runway-light {
-                width: 8px;
-                height: 8px;
-                border-radius: 50%;
-                background: #00ff00;
-                animation: runway-blink 1.5s ease-in-out infinite;
-                box-shadow: 0 0 10px #00ff00;
-            }
-            
-            .runway-light:nth-child(1) { animation-delay: 0s; }
-            .runway-light:nth-child(2) { animation-delay: 0.2s; }
-            .runway-light:nth-child(3) { animation-delay: 0.4s; }
-            .runway-light:nth-child(4) { animation-delay: 0.6s; }
-            .runway-light:nth-child(5) { animation-delay: 0.8s; }
-            
-            @keyframes runway-blink {
-                0%, 40% {
-                    opacity: 1;
-                    background: #00ff00;
-                    box-shadow: 0 0 15px #00ff00, 0 0 25px #00ff00;
-                }
-                50%, 100% {
-                    opacity: 0.3;
-                    background: #004400;
-                    box-shadow: 0 0 5px #004400;
-                }
-            }
-            
-            .runway-text {
-                color: white;
-                font-size: 14px;
-                font-weight: 600;
-                text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
-                white-space: nowrap;
-            }
-            
-            .runway-arrow {
-                color: #00ff00;
-                font-size: 18px;
-                animation: runway-arrow-pulse 1s ease-in-out infinite;
-                text-shadow: 0 0 10px #00ff00;
-            }
-            
-            @keyframes runway-arrow-pulse {
-                0%, 50% {
-                    transform: translateY(0);
-                    opacity: 1;
-                }
-                100% {
-                    transform: translateY(3px);
-                    opacity: 0.7;
-                }
-            }
-            
-            /* Дополнительные эффекты для реализма */
-            .runway-indicator::before {
-                content: '';
-                position: absolute;
-                top: -2px;
-                left: -2px;
-                right: -2px;
-                bottom: -2px;
-                background: linear-gradient(45deg, 
-                    rgba(0, 255, 0, 0.3) 0%, 
-                    transparent 25%, 
-                    transparent 75%, 
-                    rgba(0, 255, 0, 0.3) 100%
-                );
-                border-radius: 27px;
-                animation: runway-border-glow 2s linear infinite;
-                z-index: -1;
-            }
-            
-            @keyframes runway-border-glow {
-                0% {
-                    transform: rotate(0deg);
-                }
-                100% {
-                    transform: rotate(360deg);
-                }
             }
         </style>
     </head>
@@ -936,14 +622,13 @@ async def get_app():
                         currentView: 'menu',
                         productInfo: {},
                         videos: [],
-                        activeVideos: {}, // Отслеживает, какие видео активны
+                        nutrition: [],
+                        activeVideos: {},
                         loading: false,
-                        message: null,
-                        showRunwayIndicator: false
+                        message: null
                     }
                 },
                 async mounted() {
-                    // Инициализация Telegram Web App
                     if (window.Telegram && window.Telegram.WebApp) {
                         window.Telegram.WebApp.ready();
                         window.Telegram.WebApp.expand();
@@ -951,15 +636,9 @@ async def get_app():
                         window.Telegram.WebApp.setBackgroundColor('#ffffff');
                     }
                     
-                    // Загрузка данных
                     await this.loadProductInfo();
                     await this.loadVideos();
-                    
-                    // Обработчик скролла для показа/скрытия индикатора взлетной полосы
-                    window.addEventListener('scroll', this.handleScroll);
-                },
-                beforeUnmount() {
-                    window.removeEventListener('scroll', this.handleScroll);
+                    await this.loadNutrition();
                 },
                 methods: {
                     async loadProductInfo() {
@@ -969,7 +648,6 @@ async def get_app():
                             this.productInfo = await response.json();
                         } catch (error) {
                             console.error('Ошибка загрузки информации о продукте:', error);
-                            this.showMessage('Ошибка загрузки данных', 'error');
                         } finally {
                             this.loading = false;
                         }
@@ -981,7 +659,17 @@ async def get_app():
                             this.videos = await response.json();
                         } catch (error) {
                             console.error('Ошибка загрузки видео:', error);
-                            this.showMessage('Ошибка загрузки видео', 'error');
+                        } finally {
+                            this.loading = false;
+                        }
+                    },
+                    async loadNutrition() {
+                        try {
+                            this.loading = true;
+                            const response = await fetch(`${API_BASE}/nutrition`);
+                            this.nutrition = await response.json();
+                        } catch (error) {
+                            console.error('Ошибка загрузки рациона:', error);
                         } finally {
                             this.loading = false;
                         }
@@ -990,10 +678,8 @@ async def get_app():
                         const whatsappUrl = 'https://api.whatsapp.com/send?phone=77087720751';
                         
                         if (window.Telegram && window.Telegram.WebApp) {
-                            // В Telegram Mini App открываем через Telegram API
                             window.Telegram.WebApp.openLink(whatsappUrl);
                         } else {
-                            // В обычном браузере открываем в новой вкладке
                             window.open(whatsappUrl, '_blank');
                         }
                     },
@@ -1017,16 +703,14 @@ async def get_app():
                     },
                     getEmbedUrl(youtubeUrl) {
                         const videoId = this.extractYouTubeId(youtubeUrl);
-                        // Добавляем параметры для лучшего отображения Shorts
-                        return videoId ? `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1&fs=1&autoplay=0&controls=1&mute=0&loop=0` : null;
+                        return videoId ? `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1&fs=1` : null;
                     },
-                    
                     isShorts(youtubeUrl) {
                         return youtubeUrl.includes('/shorts/');
                     },
                     toggleVideo(videoId) {
                         this.activeVideos[videoId] = !this.activeVideos[videoId];
-                        this.$forceUpdate(); // Принудительное обновление Vue
+                        this.$forceUpdate();
                     },
                     openYoutube(url) {
                         if (window.Telegram && window.Telegram.WebApp) {
@@ -1034,67 +718,10 @@ async def get_app():
                         } else {
                             window.open(url, '_blank');
                         }
-                    },
-                    showMessage(text, type = 'info') {
-                        this.message = { text, type };
-                        setTimeout(() => {
-                            this.message = null;
-                        }, 5000);
-                    },
-                    getLevelColor(level) {
-                        const colors = {
-                            'начинающий': '#4CAF50',
-                            'средний': '#FF9800', 
-                            'продвинутый': '#F44336'
-                        };
-                        return colors[level] || '#007AFF';
-                    },
-                    handleScroll() {
-                        // Показываем индикатор взлетной полосы только в разделе тренинг программы
-                        if (this.currentView === 'training') {
-                            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-                            const windowHeight = window.innerHeight;
-                            const documentHeight = document.documentElement.scrollHeight;
-                            
-                            // Показываем индикатор, если не долистали до конца
-                            this.showRunwayIndicator = scrollTop + windowHeight < documentHeight - 100;
-                        } else {
-                            this.showRunwayIndicator = false;
-                        }
-                    },
-                    scrollToVideos() {
-                        // Находим первое видео и плавно скроллим к нему
-                        const firstVideo = document.querySelector('.video-item');
-                        if (firstVideo) {
-                            firstVideo.scrollIntoView({ 
-                                behavior: 'smooth', 
-                                block: 'start',
-                                inline: 'nearest'
-                            });
-                        }
-                    }
-                },
-                watch: {
-                    currentView(newView) {
-                        // Сбрасываем индикатор при смене вида
-                        if (newView !== 'training') {
-                            this.showRunwayIndicator = false;
-                        } else {
-                            // Проверяем нужность индикатора при переходе в тренинг
-                            this.$nextTick(() => {
-                                this.handleScroll();
-                            });
-                        }
                     }
                 },
                 template: `
                     <div class="container">
-                        <!-- Сообщения -->
-                        <div v-if="message" :class="'message ' + message.type + '-message'">
-                            {{ message.text }}
-                        </div>
-                        
-                        <!-- Индикатор загрузки -->
                         <div v-if="loading" class="loading">
                             ⏳ Загрузка...
                         </div>
@@ -1110,6 +737,10 @@ async def get_app():
                             
                             <a href="#" class="menu-item" @click="currentView = 'training'">
                                 🎥 Тренинг программа
+                            </a>
+                            
+                            <a href="#" class="menu-item" @click="currentView = 'nutrition'">
+                                🍽️ Рацион питания
                             </a>
                             
                             <a href="#" class="menu-item whatsapp-btn" @click="openWhatsApp()">
@@ -1139,7 +770,7 @@ async def get_app():
                             <p><strong>Максимальная нагрузка:</strong> {{ productInfo.specifications?.max_load }}</p>
                         </div>
                         
-                        <!-- Тренинг программа с улучшенными видео-виджетами -->
+                        <!-- Тренинг программа -->
                         <div v-if="currentView === 'training'">
                             <a href="#" class="menu-item back-btn" @click="currentView = 'menu'">
                                 ← Назад в меню
@@ -1148,23 +779,13 @@ async def get_app():
                             <h2>🎯 Тренинг программа</h2>
                             <p>Профессиональные видео-уроки для эффективного использования тренажера:</p>
                             
-                            <!-- Image above videos -->
                             <img 
                                 src="/static/photo-training_equipment.webp" 
                                 alt="Тренажер" 
                                 style="width:100%; max-width:600px; border-radius:12px; margin:20px 0; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
                             
-                            <!-- Scroll Down индикатор -->
-                            <div class="scroll-indicator">
-                                <div class="scroll-text">🎥 Scroll Down for Videos</div>
-                                <div class="scroll-arrow">↓</div>
-                                <div class="scroll-subtitle">Прокрутите вниз для просмотра упражнений</div>
-                            </div>
-                            
                             <div v-for="video in videos" :key="video.id" class="video-item">
-                                <!-- Видео виджет оптимизированный для Shorts -->
                                 <div class="video-widget">
-                                    <!-- Превью или встроенное видео -->
                                     <div v-if="!activeVideos[video.id]">
                                         <div 
                                             class="video-thumbnail" 
@@ -1175,10 +796,6 @@ async def get_app():
                                             }"
                                             @click="toggleVideo(video.id)"
                                         >
-                                            <!-- Бейдж для Shorts -->
-                                            <div v-if="isShorts(video.youtube_url)" class="shorts-badge">
-                                                📱 Shorts
-                                            </div>
                                             <div class="play-button"></div>
                                         </div>
                                     </div>
@@ -1186,60 +803,45 @@ async def get_app():
                                         <iframe 
                                             :src="getEmbedUrl(video.youtube_url)"
                                             class="video-embed"
-                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                             allowfullscreen>
                                         </iframe>
                                     </div>
                                     
-                                    <!-- Информация о видео -->
-                                    <div class="video-info">
-                                        <div class="video-title">{{ video.title }}</div>
-                                        <div class="video-description">{{ video.description }}</div>
-                                        <div class="video-meta">
+                                    <div style="padding: 15px; background: white;">
+                                        <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">{{ video.title }}</div>
+                                        <div style="color: #666; margin-bottom: 10px;">{{ video.description }}</div>
+                                        <div style="display: flex; justify-content: space-between; font-size: 14px; color: #888;">
                                             <span>⏱️ {{ video.duration }}</span>
-                                            <span 
-                                                class="video-level" 
-                                                :style="{ backgroundColor: getLevelColor(video.level) }"
-                                            >
+                                            <span style="background: #007AFF; color: white; padding: 4px 8px; border-radius: 12px; font-size: 12px;">
                                                 {{ video.level }}
                                             </span>
-                                        </div>
-                                        
-                                        <!-- Управление видео -->
-                                        <div class="video-controls">
-                                            <button 
-                                                class="control-btn"
-                                                :class="{ active: activeVideos[video.id] }"
-                                                @click="toggleVideo(video.id)"
-                                            >
-                                                {{ activeVideos[video.id] ? '📱 Скрыть' : '▶️ Смотреть' }}
-                                            </button>
-                                            <button 
-                                                class="control-btn"
-                                                @click="openYoutube(video.youtube_url)"
-                                            >
-                                                🔗 YouTube
-                                            </button>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         
-                        <!-- Плавающий индикатор взлетной полосы -->
-                        <div 
-                            v-if="showRunwayIndicator && currentView === 'training'"
-                            class="runway-indicator"
-                            @click="scrollToVideos"
-                        >
-                            <div class="runway-lights">
-                                <div class="runway-light"></div>
-                                <div class="runway-light"></div>
-                                <div class="runway-light"></div>
-                                <div class="runway-light"></div>
-                                <div class="runway-light"></div>
+                        <!-- Рацион питания -->
+                        <div v-if="currentView === 'nutrition'">
+                            <a href="#" class="menu-item back-btn" @click="currentView = 'menu'">
+                                ← Назад в меню
+                            </a>
+                            
+                            <h2>🍽️ Рацион питания</h2>
+                            <p>Сбалансированное питание на каждый день недели:</p>
+                            
+                            <div v-for="item in nutrition" :key="item.id" class="nutrition-item">
+                                <span class="day-badge">День {{ item.day }}</span>
+                                <div class="nutrition-title">{{ item.title }}</div>
+                                <div class="nutrition-description">{{ item.description }}</div>
+                                <img 
+                                    :src="item.image_url" 
+                                    :alt="item.title"
+                                    class="nutrition-image"
+                                    @error="$event.target.src='/static/placeholder.jpg'"
+                                >
                             </div>
-                            <div class="runway-text">Scroll to Videos</div>
                         </div>
                     </div>
                 `
@@ -1248,21 +850,3 @@ async def get_app():
     </body>
     </html>
     """)
-
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8000))
-    print("🚀 Запуск сервера...")
-    print(f"📱 Mini App: http://localhost:{port}/app")
-    print(f"📋 API docs: http://localhost:{port}/docs")
-    print(f"🔍 Health check: http://localhost:{port}/health")
-    print("Для остановки нажмите Ctrl+C")
-    
-    # Конфигурация для uvicorn с правильной обработкой сигналов
-    uvicorn.run(
-        "main:app", 
-        host="0.0.0.0", 
-        port=port, 
-        reload=False,  # Отключаем reload для предотвращения конфликтов
-        access_log=True,
-        log_level="info"
-    )
