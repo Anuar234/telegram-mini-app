@@ -1,9 +1,8 @@
 import requests
 import os
 
-BOT_TOKEN = os.getenv("BOT_TOKEN") # Добавь BOT_TOKEN в Railway secret
-
-WEBHOOK_URL = "https://web-production-81447.up.railway.app/webhook"
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+WEBHOOK_URL = "https://telegram-mini-app-silk-five.vercel.app/api/webhook"  # ваш Vercel URL
 
 url = f"https://api.telegram.org/bot{BOT_TOKEN}/setWebhook"
 response = requests.post(url, json={"url": WEBHOOK_URL})

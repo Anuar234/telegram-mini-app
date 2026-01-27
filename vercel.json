@@ -10,6 +10,14 @@
     {
       "src": "/api/webhook",
       "dest": "api/webhook.py"
+    },
+    {
+      "src": "/static/(.*)",
+      "dest": "/static/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/$1"
     }
   ]
 }
