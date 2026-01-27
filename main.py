@@ -55,7 +55,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     # Отправляем приветствие с GIF и кнопкой
     await update.message.reply_animation(
-        animation=open("static/welcome.gif", "rb"),
+        animation=open("public/welcome.gif", "rb"),
         caption=welcome_text,
         reply_markup=reply_markup
     )
@@ -174,7 +174,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/public", StaticFiles(directory="public"), name="public")
 
 # Модели данных
 class Video(BaseModel):
@@ -244,49 +244,49 @@ NUTRITION_DB = [
         "id": 1,
         "title": "День 1 - Понедельник",
         "description": "Сбалансированное начало недели",
-        "image_url": "/static/nutrition/day1.jpg",
+        "image_url": "/public/nutrition/day1.jpg",
         "day": 1
     },
     {
         "id": 2,
         "title": "День 2 - Вторник",
         "description": "Белковый день",
-        "image_url": "/static/nutrition/day2.jpg",
+        "image_url": "/public/nutrition/day2.jpg",
         "day": 2
     },
     {
         "id": 3,
         "title": "День 3 - Среда",
         "description": "Овощной рацион",
-        "image_url": "/static/nutrition/day3.jpg",
+        "image_url": "/public/nutrition/day3.jpg",
         "day": 3
     },
     {
         "id": 4,
         "title": "День 4 - Четверг",
         "description": "Энергетический день",
-        "image_url": "/static/nutrition/day4.jpg",
+        "image_url": "/public/nutrition/day4.jpg",
         "day": 4
     },
     {
         "id": 5,
         "title": "День 5 - Пятница",
         "description": "Рыбный день",
-        "image_url": "/static/nutrition/day5.jpg",
+        "image_url": "/public/nutrition/day5.jpg",
         "day": 5
     },
     {
         "id": 6,
         "title": "День 6 - Суббота",
         "description": "Легкий рацион",
-        "image_url": "/static/nutrition/day6.jpg",
+        "image_url": "/public/nutrition/day6.jpg",
         "day": 6
     },
     {
         "id": 7,
         "title": "День 7 - Воскресенье",
         "description": "Восстановительный день",
-        "image_url": "/static/nutrition/day7.jpg",
+        "image_url": "/public/nutrition/day7.jpg",
         "day": 7
     }
 ]
@@ -780,7 +780,7 @@ async def get_app():
                             <p>Профессиональные видео-уроки для эффективного использования тренажера:</p>
                             
                             <img 
-                                src="/static/photo-training_equipment.webp" 
+                                src="/public/photo-training_equipment.webp" 
                                 alt="Тренажер" 
                                 style="width:100%; max-width:600px; border-radius:12px; margin:20px 0; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
                             
@@ -839,7 +839,7 @@ async def get_app():
                                     :src="item.image_url" 
                                     :alt="item.title"
                                     class="nutrition-image"
-                                    @error="$event.target.src='/static/placeholder.jpg'"
+                                    @error="$event.target.src='/public/placeholder.jpg'"
                                 >
                             </div>
                         </div>
