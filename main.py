@@ -244,49 +244,49 @@ NUTRITION_DB = [
         "id": 1,
         "title": "День 1 - Понедельник",
         "description": "Сбалансированное начало недели",
-        "image_url": "/public/nutrition/day1.jpg",
+        "image_url": "/nutrition/day1.jpg",
         "day": 1
     },
     {
         "id": 2,
         "title": "День 2 - Вторник",
         "description": "Белковый день",
-        "image_url": "/public/nutrition/day2.jpg",
+        "image_url": "/nutrition/day2.jpg",
         "day": 2
     },
     {
         "id": 3,
         "title": "День 3 - Среда",
         "description": "Овощной рацион",
-        "image_url": "/public/nutrition/day3.jpg",
+        "image_url": "/nutrition/day3.jpg",
         "day": 3
     },
     {
         "id": 4,
         "title": "День 4 - Четверг",
         "description": "Энергетический день",
-        "image_url": "/public/nutrition/day4.jpg",
+        "image_url": "/nutrition/day4.jpg",
         "day": 4
     },
     {
         "id": 5,
         "title": "День 5 - Пятница",
         "description": "Рыбный день",
-        "image_url": "/public/nutrition/day5.jpg",
+        "image_url": "/nutrition/day5.jpg",
         "day": 5
     },
     {
         "id": 6,
         "title": "День 6 - Суббота",
         "description": "Легкий рацион",
-        "image_url": "/public/nutrition/day6.jpg",
+        "image_url": "/nutrition/day6.jpg",
         "day": 6
     },
     {
         "id": 7,
         "title": "День 7 - Воскресенье",
         "description": "Восстановительный день",
-        "image_url": "/public/nutrition/day7.jpg",
+        "image_url": "/nutrition/day7.jpg",
         "day": 7
     }
 ]
@@ -780,7 +780,7 @@ async def get_app():
                             <p>Профессиональные видео-уроки для эффективного использования тренажера:</p>
                             
                             <img 
-                                src="/public/photo-training_equipment.webp" 
+                                src="/photo-training_equipment.webp" 
                                 alt="Тренажер" 
                                 style="width:100%; max-width:600px; border-radius:12px; margin:20px 0; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
                             
@@ -839,7 +839,7 @@ async def get_app():
                                     :src="item.image_url" 
                                     :alt="item.title"
                                     class="nutrition-image"
-                                    @error="$event.target.src='/public/placeholder.jpg'"
+                                    @error="$event.target.src='/placeholder.jpg'"
                                 >
                             </div>
                         </div>
@@ -850,3 +850,7 @@ async def get_app():
     </body>
     </html>
     """)
+
+# Serve static files at the site root for deployments that don't use /public.
+# Keep this mount last so it doesn't override API or app routes.
+app.mount("/", StaticFiles(directory="public"), name="public-root")
