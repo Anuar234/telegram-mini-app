@@ -13,6 +13,10 @@
       "dest": "api/webhook.py"
     },
     {
+      "src": "/api/assets",
+      "dest": "api/assets.py"
+    },
+    {
       "src": "/api/app",
       "dest": "api/app.py"
     },
