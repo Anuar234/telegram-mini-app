@@ -1,13 +1,7 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "api/**/*.py",
-      "use": "@vercel/python"
-    }
-  ],
   "functions": {
-    "api/**/*.py": {
+    "api/**": {
       "includeFiles": "public/**"
     }
   }
