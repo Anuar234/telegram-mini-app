@@ -114,7 +114,7 @@ class handler(BaseHTTPRequestHandler):
             reply_markup = InlineKeyboardMarkup(keyboard)
             
             # Отправляем текстовое сообщение
-            gif_url = "https://telegram-mini-app-silk-five.vercel.app/welcome.gif"
+            gif_url = "https://raw.githubusercontent.com/Anuar234/telegram-mini-app/main/public/welcome.gif"
             try:
                 await bot.send_animation(
                     chat_id=chat_id,
