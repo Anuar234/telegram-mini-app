@@ -2,14 +2,24 @@ from http.server import BaseHTTPRequestHandler
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs
 import mimetypes
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 _BASE_DIR = Path(__file__).resolve().parents[1]
-_CANDIDATES = [
+_PUBLIC_CANDIDATES = [
     _BASE_DIR / "public",
     _BASE_DIR / "src" / "public",
     _BASE_DIR.parents[0] / "public",
 ]
-PUBLIC_DIR = next((p for p in _CANDIDATES if p.exists() and p.is_dir()), _CANDIDATES[0])
+
+def _resolve_public_file(rel_path: str) -> Path:
+    for base in _PUBLIC_CANDIDATES:
+        candidate = (base / rel_path).resolve()
+        if candidate.exists() and candidate.is_file():
+            return candidate
+    return (_PUBLIC_CANDIDATES[0] / rel_path).resolve()
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -17,12 +27,19 @@ class handler(BaseHTTPRequestHandler):
         qs = parse_qs(parsed.query or "")
         asset_path = (qs.get("asset") or [""])[0]
         if asset_path:
-            safe_path = (PUBLIC_DIR / asset_path).resolve()
-            if not str(safe_path).startswith(str(PUBLIC_DIR.resolve())):
+            safe_path = _resolve_public_file(asset_path)
+            logger.info(f"Asset request: {asset_path}")
+            for base in _PUBLIC_CANDIDATES:
+                logger.info(f"Check base: {base} exists={base.exists()} is_dir={base.is_dir()}")
+                logger.info(f"Candidate: {(base / asset_path).resolve()}")
+            # Use the first candidate for traversal guard
+            base_dir = _PUBLIC_CANDIDATES[0].resolve()
+            if not str(safe_path).startswith(str(base_dir)):
                 self.send_response(403)
                 self.end_headers()
                 return
             if not safe_path.exists() or not safe_path.is_file():
+                logger.warning(f"Asset not found: {safe_path}")
                 self.send_response(404)
                 self.end_headers()
                 return
