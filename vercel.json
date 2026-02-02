@@ -17,6 +17,10 @@
       "dest": "api/app.py"
     },
     {
+      "src": "/assets/(.*)",
+      "dest": "api/assets.py"
+    },
+    {
       "src": "/app",
       "dest": "api/app.py"
     }
