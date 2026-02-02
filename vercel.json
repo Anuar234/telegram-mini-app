@@ -6,6 +6,14 @@
       "use": "@vercel/python"
     }
   ],
+  "functions": {
+    "api/**/*.py": {
+      "includeFiles": [
+        "public/**",
+        "src/public/**"
+      ]
+    }
+  ],
   "routes": [
     { "handle": "filesystem" },
     {
