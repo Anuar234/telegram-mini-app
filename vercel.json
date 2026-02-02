@@ -7,7 +7,13 @@
     }
   ],
   "functions": {
-    "api/**/*.py": {
+    "api/app.py": {
+      "includeFiles": [
+        "public/**",
+        "src/public/**"
+      ]
+    },
+    "api/assets.py": {
       "includeFiles": [
         "public/**",
         "src/public/**"
