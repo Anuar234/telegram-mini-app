@@ -1,13 +1,13 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "api/**/*.py",
-      "use": "@vercel/python"
-    }
-  ],
   "functions": {
     "api/app.py": {
+      "includeFiles": [
+        "public/**",
+        "src/public/**"
+      ]
+    },
+    "api/webhook.py": {
       "includeFiles": [
         "public/**",
         "src/public/**"
@@ -19,28 +19,5 @@
         "src/public/**"
       ]
     }
-  ],
-  "routes": [
-    { "handle": "filesystem" },
-    {
-      "src": "/api/webhook",
-      "dest": "api/webhook.py"
-    },
-    {
-      "src": "/api/assets",
-      "dest": "api/assets.py"
-    },
-    {
-      "src": "/api/app",
-      "dest": "api/app.py"
-    },
-    {
-      "src": "/assets/(.*)",
-      "dest": "api/assets.py"
-    },
-    {
-      "src": "/app",
-      "dest": "api/app.py"
-    }
-  ]
+  }
 }

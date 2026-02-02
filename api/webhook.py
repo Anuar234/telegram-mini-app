@@ -108,7 +108,7 @@ class handler(BaseHTTPRequestHandler):
             keyboard = [
                 [InlineKeyboardButton(
                     "🏋️ Открыть тренажер Mini App", 
-                    web_app={"url": "https://telegram-mini-app-silk-five.vercel.app/app"}
+                    web_app={"url": "https://telegram-mini-app-silk-five.vercel.app/api/app"}
                 )]
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
