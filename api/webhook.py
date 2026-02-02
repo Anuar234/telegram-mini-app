@@ -4,6 +4,7 @@ import os
 import sys
 import traceback
 import logging
+from pathlib import Path
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
@@ -113,12 +114,24 @@ class handler(BaseHTTPRequestHandler):
             reply_markup = InlineKeyboardMarkup(keyboard)
             
             # Отправляем текстовое сообщение
-            await bot.send_message(
-                chat_id=chat_id,
-                text=welcome_text,
-                reply_markup=reply_markup
-            )
-            logger.info("Start message sent successfully!")
+            gif_path = (Path(__file__).resolve().parents[1] / "public" / "welcome.gif")
+            if gif_path.exists():
+                with gif_path.open("rb") as gif_file:
+                    await bot.send_animation(
+                        chat_id=chat_id,
+                        animation=gif_file,
+                        caption=welcome_text,
+                        reply_markup=reply_markup
+                    )
+                logger.info("Start animation sent successfully!")
+            else:
+                logger.warning(f"GIF not found at {gif_path}. Sending text only.")
+                await bot.send_message(
+                    chat_id=chat_id,
+                    text=welcome_text,
+                    reply_markup=reply_markup
+                )
+                logger.info("Start message sent successfully!")
             
         except Exception as e:
             logger.error(f"Error in handle_start: {e}")
