@@ -114,12 +114,23 @@ class handler(BaseHTTPRequestHandler):
             reply_markup = InlineKeyboardMarkup(keyboard)
             
             # Отправляем текстовое сообщение
-            await bot.send_message(
-                chat_id=chat_id,
-                text=welcome_text,
-                reply_markup=reply_markup
-            )
-            logger.info("Start message sent successfully!")
+            gif_url = "https://telegram-mini-app-silk-five.vercel.app/api/assets?path=welcome.gif"
+            try:
+                await bot.send_animation(
+                    chat_id=chat_id,
+                    animation=gif_url,
+                    caption=welcome_text,
+                    reply_markup=reply_markup
+                )
+                logger.info("Start animation sent successfully!")
+            except Exception as e:
+                logger.warning(f"Failed to send animation, fallback to text: {e}")
+                await bot.send_message(
+                    chat_id=chat_id,
+                    text=welcome_text,
+                    reply_markup=reply_markup
+                )
+                logger.info("Start message sent successfully!")
             
         except Exception as e:
             logger.error(f"Error in handle_start: {e}")
