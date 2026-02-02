@@ -2,22 +2,13 @@
   "version": 2,
   "functions": {
     "api/app.py": {
-      "includeFiles": [
-        "public/**",
-        "src/public/**"
-      ]
+      "includeFiles": "public/**"
     },
     "api/webhook.py": {
-      "includeFiles": [
-        "public/**",
-        "src/public/**"
-      ]
+      "includeFiles": "public/**"
     },
     "api/assets.py": {
-      "includeFiles": [
-        "public/**",
-        "src/public/**"
-      ]
+      "includeFiles": "public/**"
     }
   }
 }
