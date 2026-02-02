@@ -4,7 +4,13 @@ import mimetypes
 from urllib.parse import urlparse, parse_qs
 
 
-PUBLIC_DIR = Path(__file__).resolve().parents[1] / "public"
+_BASE_DIR = Path(__file__).resolve().parents[1]
+_CANDIDATES = [
+    _BASE_DIR / "public",
+    _BASE_DIR / "src" / "public",
+    _BASE_DIR.parents[0] / "public",
+]
+PUBLIC_DIR = next((p for p in _CANDIDATES if p.exists() and p.is_dir()), _CANDIDATES[0])
 
 
 class handler(BaseHTTPRequestHandler):
