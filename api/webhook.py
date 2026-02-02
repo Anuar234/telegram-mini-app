@@ -79,7 +79,8 @@ class handler(BaseHTTPRequestHandler):
             logger.info(f"Message from {chat_id}: {text}")
             
             # Проверяем команду /start
-            if text == '/start':
+            # Telegram может прислать /start@BotName или /start <payload>
+            if text.startswith('/start'):
                 logger.info("Processing /start command")
                 await self.handle_start(bot, chat_id, InlineKeyboardButton, InlineKeyboardMarkup)
                 return "Start processed"
