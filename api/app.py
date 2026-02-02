@@ -207,13 +207,13 @@ class handler(BaseHTTPRequestHandler):
                         }
                     ],
                     nutrition: [
-                        {id: 1, title: "День 1 - Понедельник", description: "Сбалансированное начало недели", image_url: "/assets/nutrition/day1.jpg", day: 1},
-                        {id: 2, title: "День 2 - Вторник", description: "Белковый день", image_url: "/assets/nutrition/day2.jpg", day: 2},
-                        {id: 3, title: "День 3 - Среда", description: "Овощной рацион", image_url: "/assets/nutrition/day3.jpg", day: 3},
-                        {id: 4, title: "День 4 - Четверг", description: "Энергетический день", image_url: "/assets/nutrition/day4.jpg", day: 4},
-                        {id: 5, title: "День 5 - Пятница", description: "Рыбный день", image_url: "/assets/nutrition/day5.jpg", day: 5},
-                        {id: 6, title: "День 6 - Суббота", description: "Легкий рацион", image_url: "/assets/nutrition/day6.jpg", day: 6},
-                        {id: 7, title: "День 7 - Воскресенье", description: "Восстановительный день", image_url: "/assets/nutrition/day7.jpg", day: 7}
+                        {id: 1, title: "День 1 - Понедельник", description: "Сбалансированное начало недели", image_url: "/api/assets?path=nutrition/day1.jpg", day: 1},
+                        {id: 2, title: "День 2 - Вторник", description: "Белковый день", image_url: "/api/assets?path=nutrition/day2.jpg", day: 2},
+                        {id: 3, title: "День 3 - Среда", description: "Овощной рацион", image_url: "/api/assets?path=nutrition/day3.jpg", day: 3},
+                        {id: 4, title: "День 4 - Четверг", description: "Энергетический день", image_url: "/api/assets?path=nutrition/day4.jpg", day: 4},
+                        {id: 5, title: "День 5 - Пятница", description: "Рыбный день", image_url: "/api/assets?path=nutrition/day5.jpg", day: 5},
+                        {id: 6, title: "День 6 - Суббота", description: "Легкий рацион", image_url: "/api/assets?path=nutrition/day6.jpg", day: 6},
+                        {id: 7, title: "День 7 - Воскресенье", description: "Восстановительный день", image_url: "/api/assets?path=nutrition/day7.jpg", day: 7}
                     ],
                     activeVideos: {}
                 }
@@ -313,7 +313,7 @@ class handler(BaseHTTPRequestHandler):
                         <h2>🎯 Тренинг программа</h2>
                         <p>Профессиональные видео-уроки для эффективного использования тренажера:</p>
                         
-                        <img src="/assets/photo-training_equipment.webp" alt="Тренажер" 
+                        <img src="/api/assets?path=photo-training_equipment.webp" alt="Тренажер" 
                              style="width:100%; max-width:600px; border-radius:12px; margin:20px 0; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
                         
                         <div v-for="video in videos" :key="video.id" class="video-item">

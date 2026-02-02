@@ -1,6 +1,7 @@
 from http.server import BaseHTTPRequestHandler
 from pathlib import Path
 import mimetypes
+from urllib.parse import urlparse, parse_qs
 
 
 PUBLIC_DIR = Path(__file__).resolve().parents[1] / "public"
@@ -9,13 +10,23 @@ PUBLIC_DIR = Path(__file__).resolve().parents[1] / "public"
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
         try:
-            # Expected path: /assets/<file>
-            if not self.path.startswith("/assets/"):
+            # Support both:
+            # - /api/assets?path=welcome.gif
+            # - /assets/welcome.gif (if routed)
+            parsed = urlparse(self.path)
+            rel_path = ""
+
+            if parsed.path.startswith("/assets/"):
+                rel_path = parsed.path[len("/assets/"):]
+            else:
+                qs = parse_qs(parsed.query or "")
+                rel_path = (qs.get("path") or [""])[0]
+
+            if not rel_path:
                 self.send_response(404)
                 self.end_headers()
                 return
 
-            rel_path = self.path[len("/assets/"):]
             # Prevent path traversal
             safe_path = (PUBLIC_DIR / rel_path).resolve()
             if not str(safe_path).startswith(str(PUBLIC_DIR.resolve())):
