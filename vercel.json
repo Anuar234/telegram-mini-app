@@ -7,6 +7,7 @@
     }
   ],
   "routes": [
+    { "handle": "filesystem" },
     {
       "src": "/api/webhook",
       "dest": "api/webhook.py"
