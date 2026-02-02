@@ -1,7 +1,42 @@
 from http.server import BaseHTTPRequestHandler
+from pathlib import Path
+from urllib.parse import urlparse, parse_qs
+import mimetypes
+
+_BASE_DIR = Path(__file__).resolve().parents[1]
+_CANDIDATES = [
+    _BASE_DIR / "public",
+    _BASE_DIR / "src" / "public",
+    _BASE_DIR.parents[0] / "public",
+]
+PUBLIC_DIR = next((p for p in _CANDIDATES if p.exists() and p.is_dir()), _CANDIDATES[0])
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
+        parsed = urlparse(self.path)
+        qs = parse_qs(parsed.query or "")
+        asset_path = (qs.get("asset") or [""])[0]
+        if asset_path:
+            safe_path = (PUBLIC_DIR / asset_path).resolve()
+            if not str(safe_path).startswith(str(PUBLIC_DIR.resolve())):
+                self.send_response(403)
+                self.end_headers()
+                return
+            if not safe_path.exists() or not safe_path.is_file():
+                self.send_response(404)
+                self.end_headers()
+                return
+            content_type, _ = mimetypes.guess_type(str(safe_path))
+            if not content_type:
+                content_type = "application/octet-stream"
+            data = safe_path.read_bytes()
+            self.send_response(200)
+            self.send_header('Content-type', content_type)
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+            return
+
         self.send_response(200)
         self.send_header('Content-type', 'text/html; charset=utf-8')
         self.end_headers()
@@ -207,13 +242,13 @@ class handler(BaseHTTPRequestHandler):
                         }
                     ],
                     nutrition: [
-                        {id: 1, title: "День 1 - Понедельник", description: "Сбалансированное начало недели", image_url: "/api/assets?path=nutrition/day1.jpg", day: 1},
-                        {id: 2, title: "День 2 - Вторник", description: "Белковый день", image_url: "/api/assets?path=nutrition/day2.jpg", day: 2},
-                        {id: 3, title: "День 3 - Среда", description: "Овощной рацион", image_url: "/api/assets?path=nutrition/day3.jpg", day: 3},
-                        {id: 4, title: "День 4 - Четверг", description: "Энергетический день", image_url: "/api/assets?path=nutrition/day4.jpg", day: 4},
-                        {id: 5, title: "День 5 - Пятница", description: "Рыбный день", image_url: "/api/assets?path=nutrition/day5.jpg", day: 5},
-                        {id: 6, title: "День 6 - Суббота", description: "Легкий рацион", image_url: "/api/assets?path=nutrition/day6.jpg", day: 6},
-                        {id: 7, title: "День 7 - Воскресенье", description: "Восстановительный день", image_url: "/api/assets?path=nutrition/day7.jpg", day: 7}
+                        {id: 1, title: "День 1 - Понедельник", description: "Сбалансированное начало недели", image_url: "/api/app?asset=nutrition/day1.jpg", day: 1},
+                        {id: 2, title: "День 2 - Вторник", description: "Белковый день", image_url: "/api/app?asset=nutrition/day2.jpg", day: 2},
+                        {id: 3, title: "День 3 - Среда", description: "Овощной рацион", image_url: "/api/app?asset=nutrition/day3.jpg", day: 3},
+                        {id: 4, title: "День 4 - Четверг", description: "Энергетический день", image_url: "/api/app?asset=nutrition/day4.jpg", day: 4},
+                        {id: 5, title: "День 5 - Пятница", description: "Рыбный день", image_url: "/api/app?asset=nutrition/day5.jpg", day: 5},
+                        {id: 6, title: "День 6 - Суббота", description: "Легкий рацион", image_url: "/api/app?asset=nutrition/day6.jpg", day: 6},
+                        {id: 7, title: "День 7 - Воскресенье", description: "Восстановительный день", image_url: "/api/app?asset=nutrition/day7.jpg", day: 7}
                     ],
                     activeVideos: {}
                 }
@@ -313,7 +348,7 @@ class handler(BaseHTTPRequestHandler):
                         <h2>🎯 Тренинг программа</h2>
                         <p>Профессиональные видео-уроки для эффективного использования тренажера:</p>
                         
-                        <img src="/api/assets?path=photo-training_equipment.webp" alt="Тренажер" 
+                        <img src="/api/app?asset=photo-training_equipment.webp" alt="Тренажер" 
                              style="width:100%; max-width:600px; border-radius:12px; margin:20px 0; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
                         
                         <div v-for="video in videos" :key="video.id" class="video-item">
